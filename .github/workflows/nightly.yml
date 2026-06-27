@@ -1,11 +1,14 @@
 name: nightly
 
 # Full refresh: extract → transform+test → load the Supabase spine → rebuild
-# tiles → redeploy. Runs on a schedule (and on demand). Secrets required:
+# tiles → redeploy the `metrotrack` Vercel project (serves transit.an9.dev).
+# Runs on a schedule (and on demand). Emails on failure. Secrets required:
 #   SUPABASE_A_DB_URL   — direct Postgres URL for Project A (gold load)
 #   VERCEL_TOKEN        — Vercel access token
-#   VERCEL_ORG_ID       — Vercel org id  (vercel link writes these to .vercel)
-#   VERCEL_PROJECT_ID   — Vercel project id
+#   VERCEL_ORG_ID       — Vercel org id   (team_l1XTfSv1TIiBFAwM5JmkgzJ3)
+#   VERCEL_PROJECT_ID   — `metrotrack` project id (prj_WdPrwVDC3jzBQZBSoj0Lo9AQVIe1)
+#   SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD — mail relay for alerts
+#   ALERT_EMAIL         — where failure alerts are sent
 on:
   schedule:
     - cron: "0 8 * * *" # 08:00 UTC ≈ 02:00–03:00 America/Chicago
@@ -70,10 +73,37 @@ jobs:
           npm ci
           npx astro build
 
-      - name: Redeploy to Vercel (production)
+      - name: Redeploy the metrotrack project (production)
         working-directory: frontend
+        # VERCEL_ORG_ID + VERCEL_PROJECT_ID bind the CLI to the `metrotrack`
+        # project explicitly (no .vercel link needed); --prod aliases transit.an9.dev.
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         run: npx vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"
+
+  notify-failure:
+    needs: refresh
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Email on failure
+        uses: dawidd6/action-send-mail@v4
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: MetroTrack CI <${{ secrets.SMTP_USERNAME }}>
+          to: ${{ secrets.ALERT_EMAIL }}
+          subject: "MetroTrack nightly failed — run ${{ github.run_id }}"
+          body: |
+            The nightly refresh failed.
+
+            Repo:  ${{ github.repository }}
+            Run:   ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Check the failing step (extract / dbt / freshness floor / load / deploy)
+            in the run log above.
