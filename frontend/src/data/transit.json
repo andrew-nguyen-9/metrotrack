@@ -204,5 +204,126 @@
     "metra": 241,
     "pace": 320
   },
-  "stopTotal": 881
+  "stopTotal": 881,
+  "hex": {
+    "count": 1934,
+    "breaks": {
+      "jobs": [
+        104,
+        255,
+        542,
+        1248
+      ],
+      "population": [
+        1278,
+        1797,
+        2439,
+        3731
+      ]
+    },
+    "topJobs": [
+      {
+        "h3": "882664c1a9fffff",
+        "jobs": 349153,
+        "population": 8810
+      },
+      {
+        "h3": "882664c1e3fffff",
+        "jobs": 91876,
+        "population": 17754
+      },
+      {
+        "h3": "882664c1a1fffff",
+        "jobs": 57580,
+        "population": 7084
+      },
+      {
+        "h3": "882664c1e7fffff",
+        "jobs": 51859,
+        "population": 10129
+      },
+      {
+        "h3": "882664c1e1fffff",
+        "jobs": 45022,
+        "population": 15083
+      },
+      {
+        "h3": "882664c1a5fffff",
+        "jobs": 40630,
+        "population": 8016
+      },
+      {
+        "h3": "88275934edfffff",
+        "jobs": 37820,
+        "population": 0
+      },
+      {
+        "h3": "882664c1adfffff",
+        "jobs": 34968,
+        "population": 6248
+      },
+      {
+        "h3": "8827592249fffff",
+        "jobs": 29481,
+        "population": 2030
+      },
+      {
+        "h3": "88275930abfffff",
+        "jobs": 26757,
+        "population": 3621
+      }
+    ],
+    "topPopulation": [
+      {
+        "h3": "882664c1edfffff",
+        "jobs": 8697,
+        "population": 20596
+      },
+      {
+        "h3": "882664c10dfffff",
+        "jobs": 2747,
+        "population": 18264
+      },
+      {
+        "h3": "882664c1e3fffff",
+        "jobs": 91876,
+        "population": 17754
+      },
+      {
+        "h3": "882664c1e1fffff",
+        "jobs": 45022,
+        "population": 15083
+      },
+      {
+        "h3": "882664c16bfffff",
+        "jobs": 2623,
+        "population": 14917
+      },
+      {
+        "h3": "882664c13bfffff",
+        "jobs": 3930,
+        "population": 13944
+      },
+      {
+        "h3": "882664d8c3fffff",
+        "jobs": 5821,
+        "population": 13310
+      },
+      {
+        "h3": "882664c1b5fffff",
+        "jobs": 4618,
+        "population": 12969
+      },
+      {
+        "h3": "882664c101fffff",
+        "jobs": 2304,
+        "population": 12625
+      },
+      {
+        "h3": "882664c1e5fffff",
+        "jobs": 12660,
+        "population": 12100
+      }
+    ]
+  }
 }

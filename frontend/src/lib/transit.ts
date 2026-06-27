@@ -25,4 +25,44 @@ export type TransitData = {
   }[];
   stopCounts: Record<string, number>;
   stopTotal: number;
+  hex: HexData;
+};
+
+// Hex choropleth (v1.1). `breaks` are the 4 quintile thresholds per metric,
+// precomputed at tile-build time (pipeline/tiles.py) so the client ships no
+// break math and the legend ranges are exact.
+export type HexCell = { h3: string; jobs: number; population: number };
+export type HexMetric = "jobs" | "population";
+export type HexData = {
+  count: number;
+  breaks: Record<HexMetric, number[]>;
+  topJobs: HexCell[];
+  topPopulation: HexCell[];
+};
+
+// 5-step sequential ramps (low → high), distinct hue per metric so the two
+// overlays never read alike. Color is never the only signal: only one overlay
+// shows at a time, the legend prints numeric ranges, and a click reveals exact
+// values (docs/DEFINITION_OF_DONE.md — map layers need a non-color encoding).
+export const HEX_RAMPS: Record<HexMetric, [string, string, string, string, string]> = {
+  jobs: ["#3a2a12", "#7c4d18", "#b6711f", "#e09a36", "#ffd479"],
+  population: ["#15324a", "#1f6091", "#2a86c0", "#52b0db", "#9fdcf0"],
+};
+
+export const HEX_LABELS: Record<HexMetric, string> = {
+  jobs: "Jobs (workplace)",
+  population: "Population",
+};
+
+// Legend range labels from the 4 break thresholds + the step semantics:
+// v < b0 | b0–b1 | b1–b2 | b2–b3 | ≥ b3.
+export const hexBinLabels = (breaks: number[]): string[] => {
+  const f = (n: number) => n.toLocaleString();
+  return [
+    `< ${f(breaks[0])}`,
+    `${f(breaks[0])}–${f(breaks[1])}`,
+    `${f(breaks[1])}–${f(breaks[2])}`,
+    `${f(breaks[2])}–${f(breaks[3])}`,
+    `≥ ${f(breaks[3])}`,
+  ];
 };

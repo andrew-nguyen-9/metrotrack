@@ -67,6 +67,26 @@ def export() -> None:
         """,
         ["authority_id", "stop_id", "name"],
     )
+    # Hex choropleth: jobs + population per H3 cell. Geometry is stored as WKT in
+    # gold, so rebuild it for ST_AsGeoJSON (same path the Supabase loader uses).
+    hexes = _features(
+        con,
+        """
+        select h3, jobs, population,
+               ST_AsGeoJSON(ST_GeomFromText(geom_wkt)) as g
+        from gold_hex_metrics
+        order by h3
+        """,
+        ["h3", "jobs", "population"],
+    )
+    # Quintile break points (4 thresholds → 5 bins) for the choropleth + legend.
+    # Computed here so the client ships no break math and the legend is exact.
+    breaks = {
+        m: [round(v) for v in con.execute(
+            f"select quantile_cont({m}, [0.2,0.4,0.6,0.8]) from gold_hex_metrics"
+        ).fetchone()[0]]
+        for m in ("jobs", "population")
+    }
     # Bounding box across all stops, to frame the initial map view.
     bbox = con.execute(
         "select min(lon), min(lat), max(lon), max(lat) from silver_stops"
@@ -79,14 +99,20 @@ def export() -> None:
     with tempfile.TemporaryDirectory() as d:
         rp = Path(d) / "routes.geojson"
         sp = Path(d) / "stops.geojson"
+        hp = Path(d) / "hex.geojson"
         rp.write_text(json.dumps({"type": "FeatureCollection", "features": routes}))
         sp.write_text(json.dumps({"type": "FeatureCollection", "features": stops}))
+        hp.write_text(json.dumps({"type": "FeatureCollection", "features": hexes}))
         subprocess.run(
             [
                 "tippecanoe", "-o", str(PMTILES_OUT), "-f",
-                "-L", f"routes:{rp}", "-L", f"stops:{sp}",
+                "-L", f"routes:{rp}", "-L", f"stops:{sp}", "-L", f"hex:{hp}",
                 "-Z5", "-z14",
-                "--drop-densest-as-needed", "--extend-zooms-if-still-dropping",
+                # ponytail: sample data is small, so keep every feature (no drops) —
+                # the hex choropleth must stay gapless. Revisit drop flags if the
+                # full-network export blows past tile-size limits.
+                "--no-feature-limit", "--no-tile-size-limit",
+                "--extend-zooms-if-still-dropping",
             ],
             check=True,
         )
@@ -98,14 +124,29 @@ def export() -> None:
         a = s["properties"]["authority_id"]
         stop_counts[a] = stop_counts.get(a, 0) + 1
 
+    # Table fallback for the overlay: top cells by jobs + by population, so the
+    # choropleth's data exists with zero JS.
+    def _top(metric: str) -> list[dict]:
+        return sorted(
+            (h["properties"] for h in hexes),
+            key=lambda p: p[metric], reverse=True,
+        )[:10]
+
     JSON_OUT.write_text(json.dumps({
         "bbox": list(bbox),
         "routes": [r["properties"] for r in routes],
         "stopCounts": stop_counts,
         "stopTotal": len(stops),
+        "hex": {
+            "count": len(hexes),
+            "breaks": breaks,                       # {jobs:[..4..], population:[..4..]}
+            "topJobs": _top("jobs"),
+            "topPopulation": _top("population"),
+        },
     }, indent=2) + "\n")
     print(f"  ok  {PMTILES_OUT.relative_to(REPO)} ({PMTILES_OUT.stat().st_size // 1024} KB)")
-    print(f"  ok  {JSON_OUT.relative_to(REPO)} ({len(routes)} routes, {len(stops)} stops)")
+    print(f"  ok  {JSON_OUT.relative_to(REPO)} "
+          f"({len(routes)} routes, {len(stops)} stops, {len(hexes)} hexes)")
 
 
 if __name__ == "__main__":
