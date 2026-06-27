@@ -1,4 +1,20 @@
 {
+  "census/cenpop_bg": {
+    "parquet": "data/bronze/census/cenpop_bg.parquet",
+    "rows": 4002,
+    "sha256": "6503c1ae2f7d9801a62d393a026f097a892de635fc7ae86e8e3dbf51f228132d",
+    "source": "census",
+    "table": "cenpop_bg",
+    "written_at": "2026-06-27T23:37:59.678398+00:00"
+  },
+  "census/lodes_wac": {
+    "parquet": "data/bronze/census/lodes_wac.parquet",
+    "rows": 32056,
+    "sha256": "16ced47e28168d6caaae07185cdfc30045513d77cbf7274c84e4b41cf08eb840",
+    "source": "census",
+    "table": "lodes_wac",
+    "written_at": "2026-06-27T23:37:59.573111+00:00"
+  },
   "cta/routes": {
     "parquet": "data/bronze/cta/routes.parquet",
     "rows": 8,

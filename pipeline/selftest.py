@@ -14,6 +14,7 @@ import tempfile
 from pathlib import Path
 
 import bronze
+import census
 import gtfs
 
 
@@ -72,6 +73,30 @@ def main() -> int:
 
     assert gtfs.subset_head(b"stop_id\na\nb\nc\n", 1) == b"stop_id\na\n"
     passed.append("subset_head keeps header + first M rows")
+
+    # Census LODES WAC parse — Cook County filter + bg_geoid derivation. Two extra
+    # trailing C-columns prove we index by header name, not position.
+    lodes = census.parse_lodes_wac(
+        b"w_geocode,C000,CA01,CE01\n"
+        b"170310001001000,5,1,4\n"   # Cook (17031) — kept
+        b"170010001001000,9,2,7\n"   # Adams (17001) — dropped
+    )
+    rows = [r for r in lodes.decode().splitlines()]
+    assert rows[0] == "w_geocode,bg_geoid,jobs", rows
+    assert rows[1] == "170310001001000,170310001001,5" and len(rows) == 2, rows
+    passed.append("parse_lodes_wac keeps Cook blocks + derives bg_geoid + jobs")
+
+    # Census Centers-of-Population parse — BOM + '+' coords + Cook filter.
+    cenpop = census.parse_cenpop_bg(
+        "﻿STATEFP,COUNTYFP,TRACTCE,BLKGRPCE,POPULATION,LATITUDE,LONGITUDE\n"
+        "17,031,000100,1,1135,+41.880000,-087.630000\n"   # Cook — kept
+        "17,001,000100,2,745,+39.940000,-091.360000\n"     # Adams — dropped
+        .encode()
+    )
+    crows = cenpop.decode().splitlines()
+    assert crows[0] == "bg_geoid,population,lat,lon", crows
+    assert crows[1] == "170310001001,1135,41.880000,-087.630000" and len(crows) == 2, crows
+    passed.append("parse_cenpop_bg assembles bg_geoid, strips BOM/+, filters Cook")
 
     for c in passed:
         print(f"  ok  {c}")
