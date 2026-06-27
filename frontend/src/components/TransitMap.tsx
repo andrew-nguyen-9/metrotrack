@@ -179,20 +179,20 @@ export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
       <div className="absolute left-2 top-2 max-w-[68%] rounded-md border border-hairline bg-[#0b0f14]/90 p-3 text-xs text-text shadow-lg backdrop-blur-sm">
         <fieldset>
           <legend className="font-medium text-text">Overlay</legend>
-          <div className="mt-1.5 flex flex-col gap-1">
+          <div className="mt-1 flex flex-col">
             {([
               ["none", "None"],
               ["jobs", HEX_LABELS.jobs],
               ["population", HEX_LABELS.population],
             ] as [Overlay, string][]).map(([val, label]) => (
-              <label key={val} className="flex cursor-pointer items-center gap-2">
+              <label key={val} className="flex cursor-pointer items-center gap-2 py-1.5">
                 <input
                   type="radio"
                   name="map-overlay"
                   value={val}
                   checked={overlay === val}
                   onChange={() => setOverlay(val)}
-                  className="accent-[#2bb8cf]"
+                  className="h-4 w-4 accent-[#2bb8cf]"
                 />
                 <span>{label}</span>
               </label>
