@@ -1,0 +1,44 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Three pillars (docs/overview/VISION.md). Numbers are intentionally absent until
+// the pipelines that source them land — honest by construction.
+const pillars = [
+  {
+    name: "Funding",
+    body: "NITA / CTA / Pace / Metra budgets vs. actuals — where the money goes.",
+  },
+  {
+    name: "Mapping",
+    body: "Bus & rail usage against population, jobs, and destinations.",
+  },
+  {
+    name: "Hiring",
+    body: "Open reqs and understaffing tracked weekly into a vacancy trend.",
+  },
+];
+---
+
+<Base>
+  <section class="max-w-2xl">
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
+      Chicagoland transit, measured.
+    </h1>
+    <p class="mt-4 text-text-muted text-lg">
+      A neutral, public accountability tracker — funding, usage, hiring, and a
+      job-access score — built on open data. Every figure shows its source and
+      <span class="tabular">as-of</span> date.
+    </p>
+  </section>
+
+  <ul class="mt-10 grid gap-4 sm:grid-cols-3">
+    {
+      pillars.map((p) => (
+        <li class="rounded-lg border border-hairline bg-surface p-5">
+          <h2 class="font-medium">{p.name}</h2>
+          <p class="mt-2 text-sm text-text-muted">{p.body}</p>
+        </li>
+      ))
+    }
+  </ul>
+</Base>

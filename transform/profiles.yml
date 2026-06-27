@@ -1,0 +1,12 @@
+# dbt-duckdb profile. Kept in-repo (no secrets) so `dbt build` runs the same in CI
+# and locally. Set DBT_PROFILES_DIR=transform (or run dbt from transform/).
+metrotrack:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: "metrotrack.duckdb"
+      threads: 4
+      # spatial: ST_IsValid / SRID checks in silver; httpfs reserved for remote parquet.
+      extensions:
+        - spatial

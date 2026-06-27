@@ -1,0 +1,15 @@
+[project]
+name = "metrotrack-pipeline"
+version = "0.1.0"
+description = "MetroTrack ETL harness: extract → bronze (content-hashed parquet) → dbt/DuckDB transform"
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "requests>=2.32",
+    "dbt-duckdb>=1.9",
+]
+
+[tool.uv]
+package = false
+
+# ponytail: one venv at repo root covers pipeline/ + transform/; no per-dir envs.
