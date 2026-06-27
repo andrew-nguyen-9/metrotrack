@@ -1,0 +1,79 @@
+name: nightly
+
+# Full refresh: extract → transform+test → load the Supabase spine → rebuild
+# tiles → redeploy. Runs on a schedule (and on demand). Secrets required:
+#   SUPABASE_A_DB_URL   — direct Postgres URL for Project A (gold load)
+#   VERCEL_TOKEN        — Vercel access token
+#   VERCEL_ORG_ID       — Vercel org id  (vercel link writes these to .vercel)
+#   VERCEL_PROJECT_ID   — Vercel project id
+on:
+  schedule:
+    - cron: "0 8 * * *" # 08:00 UTC ≈ 02:00–03:00 America/Chicago
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+env:
+  ASTRO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+
+      - name: Install tippecanoe
+        run: |
+          git clone --depth 1 https://github.com/felt/tippecanoe.git /tmp/tippecanoe
+          make -C /tmp/tippecanoe -j2
+          sudo make -C /tmp/tippecanoe install
+
+      - name: Extract GTFS → bronze (full feeds)
+        run: uv run python pipeline/gtfs.py
+
+      - name: dbt build (silver + gold + tests)
+        working-directory: transform
+        env:
+          DBT_PROFILES_DIR: .
+        run: uv run --project .. dbt build
+
+      - name: Freshness floor — fail loudly if a feed went dark
+        working-directory: transform
+        run: |
+          uv run --project .. python - <<'PY'
+          import duckdb, sys
+          c = duckdb.connect("metrotrack.duckdb", read_only=True)
+          n = c.execute("select count(distinct authority_id) from gold_routes").fetchone()[0]
+          assert n >= 3, f"only {n} authorities have routes — a GTFS feed went dark"
+          print("freshness ok:", n, "authorities")
+          PY
+
+      - name: Load gold → Supabase Project A
+        env:
+          SUPABASE_A_DB_URL: ${{ secrets.SUPABASE_A_DB_URL }}
+        run: uv run python pipeline/load.py
+
+      - name: Rebuild PMTiles + table JSON
+        run: uv run python pipeline/tiles.py
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npx astro build
+
+      - name: Redeploy to Vercel (production)
+        working-directory: frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"

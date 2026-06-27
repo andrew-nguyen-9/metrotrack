@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: gold_routes
+    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: route_id
+        tests: [not_null]
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_stops
+    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: stop_id
+        tests: [not_null]
+      - name: geom_wkt
+        tests: [not_null]
