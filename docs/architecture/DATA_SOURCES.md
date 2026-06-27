@@ -10,8 +10,9 @@ the primary source — do not publish second-hand current-events claims.
 | RTAMS | funding | CTA/Pace/Metra financials, capital projects, ridership history | none | monthly | TBD | ☐ |
 | GTFS static (CTA, Pace, Metra) | mapping | routes, stops, schedules | none | weekly | TBD | ☐ |
 | GTFS-realtime (CTA Bus/Train Tracker, Pace) | mapping | live positions, headways → usage | API key (free) | live / sampled | TBD | ☐ |
-| US Census LEHD **LODES** | mapping | block-level jobs (where people work) | none | annual | public domain | ☐ |
-| US Census **ACS** | mapping | population, demographics | API key (free) | annual | public domain | ☐ |
+| US Census LEHD **LODES8** (WAC `S000 JT00`) | mapping | block-level jobs (workplace), `C000` total | **none** (key-free `.csv.gz`) | annual | public domain | ☐ |
+| US Census **2020 Centers of Population** (block-group, IL `BG17`) | mapping | block-group population + centroid lat/lng (binning source for v1.1) | **none** (key-free `.txt`) | decennial | public domain | ☐ |
+| US Census **ACS** | mapping | population, demographics | API key (free) | annual | public domain | ☐ (deferred past v1.1) |
 | Overpass / OpenStreetMap | mapping | POIs: shops, airports, attractions, venues | none | monthly | ODbL (attribution req.) | ☐ |
 | Authority career pages | hiring | open reqs, budgeted vs filled headcount | none (scrape) | weekly | site ToS — check | ☐ |
 | NITA / state legislation | funding, vision | governance, the funding reallocation figures | none | as published | public record | ☐ |
