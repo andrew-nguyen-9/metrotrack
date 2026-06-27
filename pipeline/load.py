@@ -23,7 +23,9 @@ DUCKDB = REPO / "transform" / "metrotrack.duckdb"
 ROUTE_UPSERT = """
 insert into public.routes
   (authority_id, route_id, short_name, long_name, route_type, color, text_color, geom)
-values (%s, %s, %s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326))
+-- ST_Multi: a route with a single shape stitches to a LINESTRING, which the
+-- MultiLineString column would reject; coerce it to MULTILINESTRING.
+values (%s, %s, %s, %s, %s, %s, %s, extensions.ST_Multi(extensions.ST_GeomFromText(%s, 4326)))
 on conflict (authority_id, route_id) do update set
   short_name = excluded.short_name,
   long_name  = excluded.long_name,
