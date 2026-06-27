@@ -26,9 +26,9 @@ const authorities = [...groups.keys()].sort();
 
 // Overlay (hex) table fallback: top areas by jobs and by population.
 const hex = data.hex;
-const hexTables: { title: string; rows: HexCell[]; metric: "jobs" | "population" }[] = [
-  { title: "Top areas by jobs", rows: hex.topJobs, metric: "jobs" },
-  { title: "Top areas by population", rows: hex.topPopulation, metric: "population" },
+const hexTables: { title: string; rows: HexCell[] }[] = [
+  { title: "Top areas by jobs", rows: hex.topJobs },
+  { title: "Top areas by population", rows: hex.topPopulation },
 ];
 ---
 

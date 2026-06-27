@@ -81,10 +81,20 @@ def export() -> None:
     )
     # Quintile break points (4 thresholds → 5 bins) for the choropleth + legend.
     # Computed here so the client ships no break math and the legend is exact.
+    # MapLibre's `step` expression requires strictly-ascending stops, so force
+    # that here — on sparse data (or a coarser geography) quantiles can tie, which
+    # would otherwise throw and blank the whole map.
+    def _ascending(vals: list[float]) -> list[int]:
+        out: list[int] = []
+        for v in vals:
+            n = round(v)
+            out.append(max(n, out[-1] + 1) if out else n)
+        return out
+
     breaks = {
-        m: [round(v) for v in con.execute(
+        m: _ascending(con.execute(
             f"select quantile_cont({m}, [0.2,0.4,0.6,0.8]) from gold_hex_metrics"
-        ).fetchone()[0]]
+        ).fetchone()[0])
         for m in ("jobs", "population")
     }
     # Bounding box across all stops, to frame the initial map view.
