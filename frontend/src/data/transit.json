@@ -1,0 +1,208 @@
+{
+  "bbox": [
+    -88.6175,
+    41.4183333,
+    -87.5477778,
+    42.5858333
+  ],
+  "routes": [
+    {
+      "authority_id": "cta",
+      "route_id": "1",
+      "short_name": "1",
+      "long_name": "Bronzeville/Union Station",
+      "route_type": 3,
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "2",
+      "short_name": "2",
+      "long_name": "Hyde Park Express",
+      "route_type": 3,
+      "color": "b71234"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "3",
+      "short_name": "3",
+      "long_name": "King Drive",
+      "route_type": 3,
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "4",
+      "short_name": "4",
+      "long_name": "Cottage Grove",
+      "route_type": 3,
+      "color": "414145"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "6",
+      "short_name": "6",
+      "long_name": "Jackson Park Express",
+      "route_type": 3,
+      "color": "b71234"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "7",
+      "short_name": "7",
+      "long_name": "Harrison",
+      "route_type": 3,
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "N5",
+      "short_name": "N5",
+      "long_name": "South Shore Night Bus",
+      "route_type": 3,
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "X4",
+      "short_name": "X4",
+      "long_name": "Cottage Grove Express",
+      "route_type": 3,
+      "color": "b71234"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "BNSF",
+      "short_name": "BNSF",
+      "long_name": "Burlington Northern",
+      "route_type": 2,
+      "color": "29C233"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "HC",
+      "short_name": "HC",
+      "long_name": "Heritage Corridor",
+      "route_type": 2,
+      "color": "550E0C"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "MD-N",
+      "short_name": "MD-N",
+      "long_name": "Milwaukee North",
+      "route_type": 2,
+      "color": "CC5500"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "MD-W",
+      "short_name": "MD-W",
+      "long_name": "Milwaukee West",
+      "route_type": 2,
+      "color": "F1AD0E"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "ME",
+      "short_name": "ME",
+      "long_name": "Metra Electric",
+      "route_type": 2,
+      "color": "EB5C00"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "NCS",
+      "short_name": "NCS",
+      "long_name": "North Central Service",
+      "route_type": 2,
+      "color": "9785BC"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "RI",
+      "short_name": "RI",
+      "long_name": "Rock Island",
+      "route_type": 2,
+      "color": "E02400"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "SWS",
+      "short_name": "SWS",
+      "long_name": "Southwest Service",
+      "route_type": 2,
+      "color": "0042A8"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "100",
+      "short_name": null,
+      "long_name": "Pulse Milwaukee Line",
+      "route_type": 3,
+      "color": "814C9E"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "101",
+      "short_name": null,
+      "long_name": "Pulse Dempster Line",
+      "route_type": 3,
+      "color": "814C9E"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "208",
+      "short_name": "208",
+      "long_name": "Golf Road",
+      "route_type": 3,
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "209",
+      "short_name": "209",
+      "long_name": "Busse Highway",
+      "route_type": 3,
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "210",
+      "short_name": "210",
+      "long_name": "Lincoln Avenue",
+      "route_type": 3,
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "213",
+      "short_name": "213",
+      "long_name": "Green Bay Road",
+      "route_type": 3,
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "215",
+      "short_name": "215",
+      "long_name": "Crawford-Howard",
+      "route_type": 3,
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "221",
+      "short_name": "221",
+      "long_name": "Wolf Road",
+      "route_type": 3,
+      "color": "00539F"
+    }
+  ],
+  "stopCounts": {
+    "cta": 320,
+    "metra": 241,
+    "pace": 320
+  },
+  "stopTotal": 881
+}

@@ -22,6 +22,9 @@ frontend/.vercel/
 # Tiles (built artifacts, not committed)
 *.pmtiles
 *.mbtiles
+# …except the committed foundation sample tile, so the Vercel preview renders
+# from git. The nightly workflow (v1.0.5) rebuilds it from the full feeds.
+!frontend/public/transit.pmtiles
 
 # Env / secrets
 .env
