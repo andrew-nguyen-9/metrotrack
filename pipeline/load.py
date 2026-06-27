@@ -43,6 +43,18 @@ on conflict (authority_id, stop_id) do update set
   geom = excluded.geom
 """
 
+HEX_UPSERT = """
+insert into public.hex_metrics
+  (h3, resolution, jobs, population, jobs_per_1k_pop, geom)
+values (%s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326))
+on conflict (h3) do update set
+  resolution      = excluded.resolution,
+  jobs            = excluded.jobs,
+  population      = excluded.population,
+  jobs_per_1k_pop = excluded.jobs_per_1k_pop,
+  geom            = excluded.geom
+"""
+
 
 def main() -> int:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
@@ -59,15 +71,21 @@ def main() -> int:
     stops = con.execute(
         "select authority_id, stop_id, name, geom_wkt from gold_stops"
     ).fetchall()
+    hexes = con.execute(
+        "select h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
+        "from gold_hex_metrics"
+    ).fetchall()
     con.close()
 
     with psycopg.connect(db_url) as pg:
         with pg.cursor() as cur:
             cur.executemany(ROUTE_UPSERT, routes)
             cur.executemany(STOP_UPSERT, stops)
+            cur.executemany(HEX_UPSERT, hexes)
         pg.commit()
 
-    print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops → Project A")
+    print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
+          f"{len(hexes)} hex cells → Project A")
     return 0
 
 

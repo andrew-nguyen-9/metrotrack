@@ -49,26 +49,44 @@ create table if not exists public.stops (
   unique (authority_id, stop_id)
 );
 
+-- ── hex_metrics ───────────────────────────────────────────────────────
+-- Jobs + population aggregated to H3 cells (mapping pillar, v1.1.4). One row per
+-- cell; jobs_per_1k_pop is null where a cell has no residents. Polygon geometry.
+create table if not exists public.hex_metrics (
+  h3              text primary key,                  -- H3 index string; res in `resolution`
+  resolution      integer not null,
+  jobs            integer not null,
+  population      integer not null,
+  jobs_per_1k_pop double precision,
+  geom            extensions.geometry(Polygon, 4326)
+);
+
 -- ── spatial indexes (qualified opclass → search_path-independent) ──────
 create index if not exists routes_geom_gix
   on public.routes using gist (geom extensions.gist_geometry_ops_2d);
 create index if not exists stops_geom_gix
   on public.stops  using gist (geom extensions.gist_geometry_ops_2d);
+create index if not exists hex_metrics_geom_gix
+  on public.hex_metrics using gist (geom extensions.gist_geometry_ops_2d);
 
 -- ── RLS: public read; writes only via service role (bypasses RLS) ──────
 alter table public.authorities enable row level security;
 alter table public.routes      enable row level security;
 alter table public.stops       enable row level security;
+alter table public.hex_metrics enable row level security;
 
 drop policy if exists "public read authorities" on public.authorities;
 drop policy if exists "public read routes"      on public.routes;
 drop policy if exists "public read stops"       on public.stops;
+drop policy if exists "public read hex_metrics" on public.hex_metrics;
 
 create policy "public read authorities" on public.authorities
   for select to anon, authenticated using (true);
 create policy "public read routes" on public.routes
   for select to anon, authenticated using (true);
 create policy "public read stops" on public.stops
+  for select to anon, authenticated using (true);
+create policy "public read hex_metrics" on public.hex_metrics
   for select to anon, authenticated using (true);
 
 -- ── seed: the three Chicagoland GTFS authorities (stable reference data) ─
