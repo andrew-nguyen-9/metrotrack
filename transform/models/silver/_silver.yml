@@ -15,3 +15,12 @@ models:
         tests: [not_null]
       - name: route_id
         tests: [not_null]
+  - name: silver_hex_metrics
+    description: Jobs + population aggregated to H3 cells over Cook County (res = h3_res var).
+    columns:
+      - name: h3
+        tests: [not_null, unique]   # one row per hex cell (cell uniqueness)
+      - name: jobs
+        tests: [not_null]
+      - name: population
+        tests: [not_null]

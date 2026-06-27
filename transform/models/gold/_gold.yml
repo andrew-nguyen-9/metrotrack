@@ -19,3 +19,10 @@ models:
         tests: [not_null]
       - name: geom_wkt
         tests: [not_null]
+  - name: gold_hex_metrics
+    description: Hex jobs/population shaped for the spine + tile export (hex polygon WKT, SRID 4326).
+    columns:
+      - name: h3
+        tests: [not_null, unique]
+      - name: geom_wkt
+        tests: [not_null]

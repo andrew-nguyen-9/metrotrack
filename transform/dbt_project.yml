@@ -14,6 +14,9 @@ clean-targets: ["target", "dbt_packages"]
 # Override the dir for full (non-sample) runs: `dbt build --vars '{bronze_dir: ...}'`.
 vars:
   bronze_dir: "../data/bronze"
+  # H3 resolution for the population/jobs overlay (res 8 ≈ 0.74 km²/cell). See
+  # docs/phases/v1/v1.1/PLAN.md. Override: `dbt build --vars '{h3_res: 9}'`.
+  h3_res: 8
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into

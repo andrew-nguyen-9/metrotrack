@@ -8,5 +8,8 @@ metrotrack:
       path: "metrotrack.duckdb"
       threads: 4
       # spatial: ST_IsValid / SRID checks in silver; httpfs reserved for remote parquet.
+      # h3 (community): lat/lng → hex cell + cell → boundary for the v1.1 overlay.
       extensions:
         - spatial
+        - name: h3
+          repo: community
