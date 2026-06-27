@@ -29,3 +29,16 @@ the primary source — do not publish second-hand current-events claims.
   cadence is deliberate. If a career page forbids scraping, record it here and find
   an alternative (FOIA, official postings feed).
 - **Dates on everything.** Each figure on the site shows its `as of` date.
+
+## Supabase project split
+
+Two free-tier Supabase projects are provisioned (10GB pooled, 5GB each), but the
+data-domain split is **deferred**. As of v1.0.2:
+
+- **Project A** (`anooxzkkffyekcuprdzb`) is the **spine** — it holds the v1.0
+  foundation schema (`authorities`, `routes`, `stops`; see `db/schema.sql`) and is
+  the only project the pipeline writes to for now.
+- **Project B** (`zqericbsgvaxjpmjyghf`) is **intentionally empty**. Which data
+  domain (e.g. high-volume ridership/GTFS-rt time series) migrates to B is a later
+  decision, made when storage on A approaches the 5GB tier. Record the cut here
+  when it happens.
