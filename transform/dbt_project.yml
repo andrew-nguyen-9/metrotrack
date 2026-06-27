@@ -10,11 +10,18 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
-# Medallion layers. Bronze is parquet on disk (pipeline/), read via DuckDB sources;
-# dbt owns silver (typed, deduped, geometry-validated) and gold (serving marts).
+# Bronze is content-hashed parquet on disk (pipeline/), read by path via DuckDB.
+# Override the dir for full (non-sample) runs: `dbt build --vars '{bronze_dir: ...}'`.
+vars:
+  bronze_dir: "../data/bronze"
+
+# Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
+# (serving marts). Silver is materialized as a table so geometry is baked into
+# metrotrack.duckdb — the tile export (v1.0.4) reads it without depending on the
+# process cwd that the bronze read_parquet paths are relative to.
 models:
   metrotrack:
     silver:
-      +materialized: view
+      +materialized: table
     gold:
       +materialized: table

@@ -14,6 +14,7 @@ import tempfile
 from pathlib import Path
 
 import bronze
+import gtfs
 
 
 def main() -> int:
@@ -47,6 +48,30 @@ def main() -> int:
         r3 = bronze.ingest_csv("selftest", "stops", csv + b"35450,Belmont\n")
         assert r3.rows == 3 and r3.sha256 != r1.sha256, r3
         passed.append("ingest_csv re-ingests on changed bytes (3 rows)")
+
+    # GTFS subset/normalize logic — pure, no network.
+    assert gtfs.normalize_csv(b"route_id, shape_id\nA, sA1 \n") == b"route_id,shape_id\nA,sA1\n"
+    passed.append("normalize_csv strips header + value whitespace")
+
+    routes_b, ids = gtfs.subset_routes(b"route_id,route_short_name\nA,1\nB,2\nC,3\n", 2)
+    assert ids == {"A", "B"} and routes_b.count(b"\n") == 3  # header + 2 rows
+    passed.append("subset_routes keeps first N + their ids")
+
+    trips = b"route_id,shape_id\nA,sA1\nA,sA1\nA,sA2\nA,sA3\nB,sB1\nC,sC1\n"
+    _, shape_ids = gtfs.subset_trips(trips, {"A", "B"}, max_shapes_per_route=2)
+    assert shape_ids == {"sA1", "sA2", "sB1"}, shape_ids  # A capped at 2 shapes, C dropped
+    passed.append("subset_trips caps shapes/route + collects shape_ids")
+
+    _, no_shapes = gtfs.subset_trips(b"route_id,trip_id\nA,1\nA,2\nB,3\n", {"A", "B"})
+    assert no_shapes == set()
+    passed.append("subset_trips tolerates trips.txt without shape_id")
+
+    shapes = b"shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\nsA1,1,2,1\nsA1,1,3,2\nsZ,0,0,1\n"
+    assert gtfs.subset_shapes(shapes, {"sA1"}).count(b"\n") == 3  # header + 2 sA1 rows
+    passed.append("subset_shapes keeps only referenced shape_ids")
+
+    assert gtfs.subset_head(b"stop_id\na\nb\nc\n", 1) == b"stop_id\na\n"
+    passed.append("subset_head keeps header + first M rows")
 
     for c in passed:
         print(f"  ok  {c}")

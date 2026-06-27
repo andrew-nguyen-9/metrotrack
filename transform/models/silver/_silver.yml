@@ -1,0 +1,17 @@
+version: 2
+
+models:
+  - name: silver_stops
+    description: Typed, deduped, validated GTFS stops — one point per authority + stop_id (SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: stop_id
+        tests: [not_null]
+  - name: silver_routes
+    description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: route_id
+        tests: [not_null]
