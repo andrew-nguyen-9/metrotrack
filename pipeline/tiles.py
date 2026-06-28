@@ -10,6 +10,7 @@ Requires tippecanoe on PATH (`brew install tippecanoe`).
 """
 from __future__ import annotations
 
+import argparse
 import json
 import shutil
 import subprocess
@@ -18,6 +19,11 @@ import tempfile
 from pathlib import Path
 
 import duckdb
+
+try:  # dual-mode: `python -m pipeline.tiles` vs `python pipeline/tiles.py`
+    from . import cli
+except ImportError:  # pragma: no cover
+    import cli
 
 REPO = Path(__file__).resolve().parent.parent
 DUCKDB = REPO / "transform" / "metrotrack.duckdb"
@@ -166,7 +172,32 @@ def export() -> None:
           f"({len(routes)} routes, {len(stops)} stops, {len(hexes)} hexes)")
 
 
-if __name__ == "__main__":
+def dry_run(metro) -> "cli.DryRunReport":
+    """Validate geo/FIPS + report whether the gold warehouse and tippecanoe are present."""
+    report = cli.DryRunReport(metro.slug, "tiles")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    report.add("gold duckdb", "pass" if DUCKDB.exists() else "fail",
+               DUCKDB.as_posix() if DUCKDB.exists() else f"missing {DUCKDB.as_posix()} (run dbt build)")
+    tip = shutil.which("tippecanoe")
+    report.add("tippecanoe", "pass" if tip else "fail",
+               tip or "not on PATH (`brew install tippecanoe`)")
+    return report
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = cli.add_metro_args(argparse.ArgumentParser(description=__doc__))
+    args = ap.parse_args(argv)
+    metro = cli.resolve_metro(args.metro)
+    if args.dry_run:
+        report = dry_run(metro)
+        print(report.render())
+        return 0 if report.ok else 1
     if not shutil.which("tippecanoe"):
         sys.exit("tippecanoe not found on PATH — `brew install tippecanoe`")
     export()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

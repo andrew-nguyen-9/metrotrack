@@ -23,22 +23,19 @@ import csv
 import io
 import re
 import sys
+import urllib.parse
 import zipfile
 
 import requests
 
-import bronze
+try:  # dual-mode: `python -m pipeline.gtfs` vs `python pipeline/gtfs.py`
+    from . import bronze, cli
+except ImportError:  # pragma: no cover
+    import bronze
+    import cli
 
 GTFS_TABLES = ("stops", "routes", "trips", "shapes")
 UA = {"User-Agent": "MetroTrack/1.0 (+https://transit.an9.dev)"}
-PACE_GTFS_PAGE = "https://www.pacebus.com/gtfs"
-
-# Pace's URL carries a rotating dated path, so it's discovered from the page.
-FEEDS: dict[str, str | None] = {
-    "cta": "https://www.transitchicago.com/downloads/sch_data/google_transit.zip",
-    "metra": "https://schedules.metrarail.com/gtfs/schedule.zip",
-    "pace": None,
-}
 
 
 # ── pure CSV helpers (no network — exercised by selftest) ───────────────
@@ -120,16 +117,23 @@ def subset_head(data: bytes, m: int) -> bytes:
 
 
 # ── network ─────────────────────────────────────────────────────────────
-def discover_pace_url() -> str:
-    html = requests.get(PACE_GTFS_PAGE, headers=UA, timeout=30).text
-    m = re.search(r'href="(/[^"]*GTFS\.zip)"', html, re.I)
+def discover_gtfs_url(page_url: str) -> str:
+    """Scrape a GTFS.zip link off a feed page (rotating dated paths, e.g. Pace)."""
+    html = requests.get(page_url, headers=UA, timeout=30).text
+    m = re.search(r'href="([^"]*GTFS\.zip)"', html, re.I)
     if not m:
-        raise RuntimeError(f"Pace GTFS link not found on {PACE_GTFS_PAGE}")
-    return "https://www.pacebus.com" + m.group(1)
+        raise RuntimeError(f"GTFS .zip link not found on {page_url}")
+    return urllib.parse.urljoin(page_url, m.group(1))
 
 
-def feed_url(authority: str) -> str:
-    return FEEDS[authority] or discover_pace_url()
+def feed_url(agency) -> str:
+    """Resolve one agency's GTFS zip URL from its metro config (static or discovered)."""
+    if agency.gtfs_url:
+        return agency.gtfs_url
+    page = agency.raw.get("gtfs_discover_url")
+    if not page:
+        raise RuntimeError(f"agency {agency.id!r} has neither gtfs_url nor gtfs_discover_url")
+    return discover_gtfs_url(page)
 
 
 def fetch_zip(url: str) -> bytes:
@@ -138,8 +142,9 @@ def fetch_zip(url: str) -> bytes:
     return r.content
 
 
-def load_authority(authority: str, *, sample: int | None = None) -> list[bronze.BronzeReceipt]:
-    zf = zipfile.ZipFile(io.BytesIO(fetch_zip(feed_url(authority))))
+def load_agency(metro, agency, *, sample: int | None = None) -> list[bronze.BronzeReceipt]:
+    """Pull one agency's GTFS into per-metro bronze (source = agency id)."""
+    zf = zipfile.ZipFile(io.BytesIO(fetch_zip(feed_url(agency))))
     names = set(zf.namelist())
     raw = {t: normalize_csv(zf.read(f"{t}.txt")) for t in GTFS_TABLES if f"{t}.txt" in names}
 
@@ -155,21 +160,47 @@ def load_authority(authority: str, *, sample: int | None = None) -> list[bronze.
     else:
         out = raw
 
-    return [bronze.ingest_csv(authority, t, data) for t, data in out.items() if data]
+    return [bronze.ingest_csv(agency.id, t, data, metro=metro.slug)
+            for t, data in out.items() if data]
+
+
+def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
+    """Validate geo/FIPS and probe each agency's GTFS feed without writing bronze. [H20a]"""
+    report = cli.DryRunReport(metro.slug, "gtfs")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    for agency in metro.agencies:
+        url = agency.gtfs_url or agency.raw.get("gtfs_discover_url", "")
+        name = f"gtfs:{agency.id}"
+        if not check_network:
+            report.add(name, "pass" if url else "fail",
+                       f"{'configured' if url else 'no url'} {url}")
+        else:
+            report.checks.append(cli.reach(name, url))
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
+    ap = cli.add_metro_args(argparse.ArgumentParser(description=__doc__))
     ap.add_argument("--sample", type=int, nargs="?", const=12, default=None,
-                    help="Trim to N routes/authority (default 12) for a committed sample.")
-    ap.add_argument("--authority", choices=list(FEEDS), help="Load just one authority.")
+                    help="Trim to N routes/agency (default 12) for a committed sample.")
+    ap.add_argument("--agency", help="Load just one agency id (default: all in the metro).")
     args = ap.parse_args(argv)
 
-    authorities = [args.authority] if args.authority else list(FEEDS)
-    for a in authorities:
-        receipts = load_authority(a, sample=args.sample)
+    metro = cli.resolve_metro(args.metro)
+
+    if args.dry_run:
+        report = dry_run(metro)
+        print(report.render())
+        return 0 if report.ok else 1
+
+    agencies = [a for a in metro.agencies if a.id == args.agency] if args.agency else list(metro.agencies)
+    if args.agency and not agencies:
+        sys.exit(f"agency {args.agency!r} not in metro {metro.slug!r}")
+    for a in agencies:
+        receipts = load_agency(metro, a, sample=args.sample)
         for r in receipts:
-            print(f"  ok  {a}/{r.table}: {r.rows} rows  ({r.sha256[:12]})")
+            print(f"  ok  {metro.slug}/{a.id}/{r.table}: {r.rows} rows  ({r.sha256[:12]})")
     return 0
 
 

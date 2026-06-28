@@ -22,7 +22,12 @@ from pathlib import Path
 import duckdb
 import psycopg
 
-import metros as metros_mod
+try:  # dual-mode: `python -m pipeline.load` vs `python pipeline/load.py`
+    from . import cli
+    from . import metros as metros_mod
+except ImportError:  # pragma: no cover
+    import cli
+    import metros as metros_mod
 
 REPO = Path(__file__).resolve().parent.parent
 DUCKDB = REPO / "transform" / "metrotrack.duckdb"
@@ -140,19 +145,41 @@ def sync_metros(db_url: str | None = None) -> int:
     return 0
 
 
+def dry_run(metro) -> "cli.DryRunReport":
+    """Validate geo/FIPS + report whether the gold warehouse + DB URL are present.
+
+    No connection, no writes — this is the smoke check the loop reuses before a load.
+    """
+    report = cli.DryRunReport(metro.slug, "load")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    report.add("gold duckdb", "pass" if DUCKDB.exists() else "fail",
+               DUCKDB.as_posix() if DUCKDB.exists() else f"missing {DUCKDB.as_posix()} (run dbt build)")
+    db = os.environ.get("SUPABASE_A_DB_URL", "")
+    db_ok = bool(db) and "[" not in db
+    report.add("SUPABASE_A_DB_URL", "pass" if db_ok else "blocked",
+               "set" if db_ok else "unset or placeholder (no DB write attempted)")
+    return report
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--metro", default="chicago",
-                    help="Metro slug to tag loaded rows (default: chicago).")
+    cli.add_metro_args(ap)
     ap.add_argument("--metros", action="store_true",
                     help="Only sync the metros registry (no gold load); skips DuckDB.")
     args = ap.parse_args()
+
+    metro_cfg = cli.resolve_metro(args.metro)  # validates slug; fails loudly on a typo
+    if args.dry_run:
+        report = dry_run(metro_cfg)
+        print(report.render())
+        return 0 if report.ok else 1
 
     db_url = _db_url()
     if args.metros:
         return sync_metros(db_url)
 
-    metro = metros_mod.load_metro(args.metro).metro_id  # validates slug; fails loudly on a typo
+    metro = metro_cfg.metro_id
     today = date.today().isoformat()
 
     sync_metros(db_url)  # keep the registry current on every full load
