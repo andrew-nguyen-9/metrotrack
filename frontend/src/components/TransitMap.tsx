@@ -13,6 +13,8 @@ type Props = {
   pmtilesUrl: string;
   bbox: [number, number, number, number];
   hex: HexData;
+  // Metro name for the accessible label; data + bbox are the only per-metro inputs.
+  metro?: string;
 };
 
 // ponytail: structural map paint mirrors the dark-theme tokens (globals.css).
@@ -93,7 +95,7 @@ const LAYER: Record<HexMetric, string> = {
   jobs: "hex-jobs", population: "hex-population", access: "hex-access",
 };
 
-export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
+export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const overlayRef = useRef<Overlay>("none");
@@ -179,7 +181,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
       <div
         ref={ref}
         role="application"
-        aria-label="Interactive map of CTA, Pace, and Metra routes and stops with a population and jobs overlay"
+        aria-label={`Interactive map of ${metro ?? "transit"} routes and stops with a population and jobs overlay`}
         className="h-full w-full"
       />
 

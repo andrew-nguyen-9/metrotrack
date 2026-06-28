@@ -1,18 +1,21 @@
 ---
-import Base from "../layouts/Base.astro";
-import FundingChart from "../components/FundingChart.tsx";
-import fundingData from "../data/funding.json";
+import Base from "../../layouts/Base.astro";
+import FundingChart from "../../components/FundingChart.tsx";
+import { type Metro, metroPaths, fundingData } from "../../lib/metros";
 import {
   authorityLabel, fmtUSD, fmtPct, authorities, rowsFor,
   RTA_KIND_LABELS, SERIES_LABELS, type FundingData,
-} from "../lib/funding";
+} from "../../lib/funding";
 
-const data = fundingData as unknown as FundingData;
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = fundingData(metro.slug) as FundingData;
 const auths = authorities(data.rows);
 const sources = data.sources;
 ---
 
-<Base title="Funding — MetroTrack">
+<Base metro={metro} title={`Funding — MetroTrack ${metro.name}`}>
   <section class="max-w-2xl">
     <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
       Where the money goes
@@ -40,7 +43,7 @@ const sources = data.sources;
     </p>
 
     <div class="mt-4 rounded-lg border border-hairline bg-surface p-4">
-      <FundingChart client:visible rows={data.rows} authorities={auths} />
+      <FundingChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
     </div>
 
     <p class="mt-2 text-xs text-text-muted">
