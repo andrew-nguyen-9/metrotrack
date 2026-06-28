@@ -47,6 +47,14 @@
     "table": "trips",
     "written_at": "2026-06-27T22:33:28.298283+00:00"
   },
+  "hiring/postings": {
+    "parquet": "data/bronze/hiring/postings.parquet",
+    "rows": 3,
+    "sha256": "473fe8d5e563daf19bda6ba8da3ca0cf9144349968bfd28e9a78b17457b11f73",
+    "source": "hiring",
+    "table": "postings",
+    "written_at": "2026-06-28T00:52:13.181420+00:00"
+  },
   "metra/routes": {
     "parquet": "data/bronze/metra/routes.parquet",
     "rows": 8,

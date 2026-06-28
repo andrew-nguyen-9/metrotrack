@@ -18,6 +18,7 @@ import bronze
 import census
 import funding
 import gtfs
+import hiring
 
 
 def main() -> int:
@@ -143,6 +144,36 @@ def main() -> int:
     except ValueError as e:
         assert "FY2025" in str(e), e
     passed.append("parse_rta_budget reconciles board sum vs Table 2 total (rejects fat-finger)")
+
+    # Hiring: Taleo prints a total; the parser reads it out of rendered text.
+    assert hiring.parse_taleo_count("...\nJob Openings 1 - 13 of 13\nPosting Date\n") == 13
+    assert hiring.parse_taleo_count(b"Job Openings 1 - 25 of 1,204 ") == 1204  # commas + bytes
+    passed.append("parse_taleo_count reads the printed listing total")
+
+    # Cadient: count distinct postings, drop the generic "Apply Now" link + dups.
+    assert hiring.count_cadient_titles(
+        ["Carman", "Roadmaster", "Carman", "Apply Now", "  ", "Senior Architect"]
+    ) == 3
+    passed.append("count_cadient_titles dedups + drops generic links")
+
+    # Oracle Recruiting REST: TotalJobsCount, with the items[0] envelope + fallback.
+    assert hiring.parse_oracle_count(
+        json.dumps({"items": [{"TotalJobsCount": 57, "requisitionList": [{}, {}]}]})
+    ) == 57
+    assert hiring.parse_oracle_count(json.dumps({"requisitionList": [{}, {}, {}]})) == 3  # fallback
+    passed.append("parse_oracle_count reads TotalJobsCount (with fallback)")
+
+    # Snapshot log is append-safe: a second same-day run replaces, never duplicates.
+    base = hiring.append_snapshot(b"", [{"authority_id": "cta", "open_postings": 13,
+        "source_url": "u", "method": "taleo"}], "2026-06-27")
+    again = hiring.append_snapshot(base, [{"authority_id": "cta", "open_postings": 15,
+        "source_url": "u", "method": "taleo"}], "2026-06-27")
+    arows = again.decode().strip().splitlines()
+    assert len(arows) == 2 and arows[1].startswith("cta,2026-06-27,15"), arows  # replaced, not dup'd
+    grown = hiring.append_snapshot(base, [{"authority_id": "cta", "open_postings": 14,
+        "source_url": "u", "method": "taleo"}], "2026-07-04")
+    assert len(grown.decode().strip().splitlines()) == 3  # new date appends
+    passed.append("append_snapshot replaces same-day, appends new dates")
 
     for c in passed:
         print(f"  ok  {c}")
