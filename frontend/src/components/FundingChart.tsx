@@ -62,6 +62,7 @@ function buildOption(rows: FundingRow[], authority: string, theme: { text: strin
     },
     yAxis: {
       type: "value",
+      min: 0, // bars must start at zero — a clipped baseline exaggerates the gap (honesty)
       axisLabel: { color: theme.muted, formatter: (v: number) => fmtUSD(v) },
       splitLine: { lineStyle: { color: theme.line } },
     },
