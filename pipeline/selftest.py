@@ -12,16 +12,92 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+from datetime import date
 from pathlib import Path
+
+import duckdb
 
 import access
 import bronze
 import census
+import checks
 import cli
 import funding
 import gtfs
 import hiring
 import metros
+
+_ALL_SOURCES = ["cta", "metra", "pace", "census", "ntd", "rta", "hiring"]
+_TODAY = date(2026, 6, 28)
+
+
+def _verify_fixture(root: Path, *, sources=None, authorities=("cta", "metra", "pace"),
+                    null_metro: bool = False, funding_fy: int = 2024) -> tuple[Path, Path]:
+    """A throwaway gold warehouse + bronze manifest for slug 'chicago'. No network."""
+    sources = _ALL_SOURCES if sources is None else sources
+    bronze_root = root / "bronze"
+    bronze_root.mkdir(parents=True, exist_ok=True)
+    manifest = {f"chicago/{s}/t": {"metro": "chicago", "source": s,
+                                   "sha256": "a" * 64, "rows": 5} for s in sources}
+    (bronze_root / "manifest.json").write_text(json.dumps(manifest))
+
+    db = root / "w.duckdb"
+    con = duckdb.connect(str(db))
+    con.execute("create table gold_routes(metro_id text, authority_id text, route_id text)")
+    for a in authorities:
+        con.execute("insert into gold_routes values ('chicago', ?, '1')", [a])
+    if null_metro:
+        con.execute("insert into gold_routes values (NULL, 'cta', '99')")
+    con.execute("create table gold_hex_metrics(metro_id text, h3 text)")
+    con.execute("insert into gold_hex_metrics values ('chicago', '8a')")
+    con.execute("create table gold_funding(metro_id text, authority_id text, fiscal_year int)")
+    con.execute("insert into gold_funding values ('chicago', 'cta', ?)", [funding_fy])
+    con.execute("create table gold_vacancy(metro_id text, authority_id text, "
+                "as_of date, open_postings int)")
+    con.execute("insert into gold_vacancy values ('chicago', 'cta', date '2026-06-01', 4)")
+    con.close()
+    return db, bronze_root
+
+
+def _verify_metro_checks(passed: list[str]) -> None:
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+
+        db, br = _verify_fixture(root / "ok")
+        rep = checks.verify_metro("chicago", duckdb_path=db, bronze_root=br, today=_TODAY)
+        assert rep.ok, rep.render()
+        passed.append("verify_metro passes a complete fixture (sources + 3 operators + fresh)")
+
+        # A configured agency with no bronze receipt → coverage fails (untraceable figure).
+        db, br = _verify_fixture(root / "noagency",
+                                 sources=[s for s in _ALL_SOURCES if s != "cta"])
+        rep = checks.verify_metro("chicago", duckdb_path=db, bronze_root=br, today=_TODAY)
+        assert not rep.ok and any(c.name == "agency coverage" and c.status == "fail"
+                                  for c in rep.checks), rep.render()
+        passed.append("verify_metro fails when a configured agency has no bronze receipt")
+
+        # Only one operator with routes → a feed went dark, freshness floor fails loud.
+        db, br = _verify_fixture(root / "dark", authorities=("cta",))
+        rep = checks.verify_metro("chicago", duckdb_path=db, bronze_root=br, today=_TODAY)
+        assert not rep.ok and any(c.name == "freshness: operators" and c.status == "fail"
+                                  for c in rep.checks), rep.render()
+        passed.append("verify_metro fails the freshness floor when a GTFS feed goes dark")
+
+        # A null metro_id row → an untenanted figure, tenant-key integrity fails.
+        db, br = _verify_fixture(root / "null", null_metro=True)
+        rep = checks.verify_metro("chicago", duckdb_path=db, bronze_root=br, today=_TODAY)
+        assert not rep.ok and any(c.name.startswith("tenant-key") and c.status == "fail"
+                                  for c in rep.checks), rep.render()
+        passed.append("verify_metro fails on a null metro_id (untenanted row)")
+
+        # No receipts at all → nothing the figures could trace to, hard fail.
+        empty = root / "empty" / "bronze"
+        empty.mkdir(parents=True)
+        (empty / "manifest.json").write_text("{}")
+        db, _ = _verify_fixture(root / "norcpt")
+        rep = checks.verify_metro("chicago", duckdb_path=db, bronze_root=empty, today=_TODAY)
+        assert not rep.ok, rep.render()
+        passed.append("verify_metro fails when the metro has no bronze receipts")
 
 
 def main() -> int:
@@ -283,6 +359,11 @@ def main() -> int:
     failing.add("bad-check", "fail", "boom")
     assert not failing.ok and "FAIL" in failing.render()
     passed.append("DryRunReport.ok is false when any check fails")
+
+    # verify_metro — the data-integrity gate the loop reuses (v2.0.6). Exercise it
+    # no-network against fixture gold warehouses + bronze manifests: a complete
+    # metro passes; a missing source, a dark feed, or a null tenant key fail loud.
+    _verify_metro_checks(passed)
 
     for c in passed:
         print(f"  ok  {c}")

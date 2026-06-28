@@ -27,12 +27,29 @@ except ImportError:  # pragma: no cover
 
 REPO = Path(__file__).resolve().parent.parent
 DUCKDB = REPO / "transform" / "metrotrack.duckdb"
-PMTILES_OUT = REPO / "frontend" / "public" / "transit.pmtiles"
-JSON_OUT = REPO / "frontend" / "src" / "data" / "transit.json"
+
+# Per-metro outputs — the contract the frontend reads (frontend/src/lib/metros.ts):
+# PMTiles at public/<slug>/transit.pmtiles, table JSON at src/data/<slug>/transit.json.
+# One archive per metro, served static off Vercel — no tile server. [B11a, I3a]
+def pmtiles_out(slug: str) -> Path:
+    return REPO / "frontend" / "public" / slug / "transit.pmtiles"
 
 
-def _features(con: duckdb.DuckDBPyConnection, sql: str, props: list[str]) -> list[dict]:
-    rows = con.execute(sql).fetchall()
+def json_out(slug: str) -> Path:
+    return REPO / "frontend" / "src" / "data" / slug / "transit.json"
+
+
+# Size cap [I4]: fail loud if an archive blows the budget. Chicago is ~1.3 MB; this
+# is a generous ceiling that keeps us well inside Vercel static limits + free tile
+# bandwidth while leaving room for denser metros.
+# ponytail: total-archive cap only; the dense-metro case (NYC) tightens per-feature
+# drop flags when it actually exceeds this — that work is scheduled in v2.4 [I4].
+MAX_PMTILES_MB = 50
+
+
+def _features(con: duckdb.DuckDBPyConnection, sql: str, props: list[str],
+              params: list | None = None) -> list[dict]:
+    rows = con.execute(sql, params or []).fetchall()
     cols = [c[0] for c in con.description]
     gi = cols.index("g")
     out = []
@@ -46,35 +63,42 @@ def _features(con: duckdb.DuckDBPyConnection, sql: str, props: list[str]) -> lis
     return out
 
 
-def export() -> None:
+def export(metro) -> None:
+    """Build <slug>'s PMTiles + table JSON from the metro's gold rows only. [B5a, H2a]"""
+    slug = metro.slug
     if not DUCKDB.exists():
         sys.exit(f"missing {DUCKDB} — run `cd transform && dbt build` first")
 
     con = duckdb.connect(str(DUCKDB), read_only=True)
     con.execute("install spatial; load spatial;")
 
+    # Every query filters on metro_id so one warehouse serves N metros without bleed.
     routes = _features(
         con,
         """
         select authority_id, route_id, short_name, long_name, route_type, color,
                ST_AsGeoJSON(geom) as g
         from silver_routes
-        where geom is not null and not st_isempty(geom)
+        where metro_id = ? and geom is not null and not st_isempty(geom)
         order by authority_id, route_id
         """,
         ["authority_id", "route_id", "short_name", "long_name", "route_type", "color"],
+        [slug],
     )
     stops = _features(
         con,
         """
         select authority_id, stop_id, name, ST_AsGeoJSON(geom) as g
         from silver_stops
+        where metro_id = ?
         order by authority_id, stop_id
         """,
         ["authority_id", "stop_id", "name"],
+        [slug],
     )
     # Hex choropleth: jobs + population per H3 cell. Geometry is stored as WKT in
     # gold, so rebuild it for ST_AsGeoJSON (same path the Supabase loader uses).
+    # Join on (metro_id, h3) so a cell only ever meets its own metro's access score.
     hexes = _features(
         con,
         """
@@ -82,10 +106,12 @@ def export() -> None:
                coalesce(a.jobs_reachable_walk, 0) as access,
                ST_AsGeoJSON(ST_GeomFromText(m.geom_wkt)) as g
         from gold_hex_metrics m
-        left join gold_hex_access a using (h3)
+        left join gold_hex_access a on a.metro_id = m.metro_id and a.h3 = m.h3
+        where m.metro_id = ?
         order by m.h3
         """,
         ["h3", "jobs", "population", "access"],
+        [slug],
     )
     # Quintile break points (4 thresholds → 5 bins) for the choropleth + legend.
     # Computed here so the client ships no break math and the legend is exact.
@@ -101,22 +127,26 @@ def export() -> None:
 
     breaks = {
         m: _ascending(con.execute(
-            f"select quantile_cont({m}, [0.2,0.4,0.6,0.8]) from gold_hex_metrics"
+            f"select quantile_cont({m}, [0.2,0.4,0.6,0.8]) "
+            "from gold_hex_metrics where metro_id = ?", [slug]
         ).fetchone()[0])
         for m in ("jobs", "population")
     }
     # Access score lives in gold_hex_access (walkshed reachable jobs); its breaks too.
     breaks["access"] = _ascending(con.execute(
-        "select quantile_cont(jobs_reachable_walk, [0.2,0.4,0.6,0.8]) from gold_hex_access"
+        "select quantile_cont(jobs_reachable_walk, [0.2,0.4,0.6,0.8]) "
+        "from gold_hex_access where metro_id = ?", [slug]
     ).fetchone()[0])
-    # Bounding box across all stops, to frame the initial map view.
+    # Bounding box across this metro's stops, to frame the initial map view.
     bbox = con.execute(
-        "select min(lon), min(lat), max(lon), max(lat) from silver_stops"
+        "select min(lon), min(lat), max(lon), max(lat) from silver_stops where metro_id = ?",
+        [slug],
     ).fetchone()
     con.close()
 
-    PMTILES_OUT.parent.mkdir(parents=True, exist_ok=True)
-    JSON_OUT.parent.mkdir(parents=True, exist_ok=True)
+    pmtiles, json_path = pmtiles_out(slug), json_out(slug)
+    pmtiles.parent.mkdir(parents=True, exist_ok=True)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory() as d:
         rp = Path(d) / "routes.geojson"
@@ -127,16 +157,26 @@ def export() -> None:
         hp.write_text(json.dumps({"type": "FeatureCollection", "features": hexes}))
         subprocess.run(
             [
-                "tippecanoe", "-o", str(PMTILES_OUT), "-f",
+                "tippecanoe", "-o", str(pmtiles), "-f",
                 "-L", f"routes:{rp}", "-L", f"stops:{sp}", "-L", f"hex:{hp}",
+                # -Z5..-z14 bounds zoom (the per-zoom limit, [B11a]); below z5 the
+                # whole metro is a few pixels, above z14 adds bytes without detail.
                 "-Z5", "-z14",
-                # ponytail: sample data is small, so keep every feature (no drops) —
-                # the hex choropleth must stay gapless. Revisit drop flags if the
-                # full-network export blows past tile-size limits.
+                # ponytail: keep every feature (no drops) — the hex choropleth must
+                # stay gapless. A dense metro that exceeds MAX_PMTILES_MB tightens
+                # these (drop-densest, lower z) in v2.4 [I4]; cap assert below is the
+                # tripwire that forces that.
                 "--no-feature-limit", "--no-tile-size-limit",
                 "--extend-zooms-if-still-dropping",
             ],
             check=True,
+        )
+
+    size_mb = pmtiles.stat().st_size / 1_048_576
+    if size_mb > MAX_PMTILES_MB:
+        sys.exit(
+            f"{pmtiles.relative_to(REPO)} is {size_mb:.1f} MB > {MAX_PMTILES_MB} MB cap "
+            f"[I4] — drop densest features or lower max zoom for '{slug}'"
         )
 
     # Table fallback: full route list + per-authority stop counts (a 960-row stop
@@ -154,7 +194,7 @@ def export() -> None:
             key=lambda p: p[metric], reverse=True,
         )[:10]
 
-    JSON_OUT.write_text(json.dumps({
+    json_path.write_text(json.dumps({
         "bbox": list(bbox),
         "routes": [r["properties"] for r in routes],
         "stopCounts": stop_counts,
@@ -167,8 +207,8 @@ def export() -> None:
             "topAccess": _top("access"),
         },
     }, indent=2) + "\n")
-    print(f"  ok  {PMTILES_OUT.relative_to(REPO)} ({PMTILES_OUT.stat().st_size // 1024} KB)")
-    print(f"  ok  {JSON_OUT.relative_to(REPO)} "
+    print(f"  ok  {pmtiles.relative_to(REPO)} ({size_mb * 1024:.0f} KB)")
+    print(f"  ok  {json_path.relative_to(REPO)} "
           f"({len(routes)} routes, {len(stops)} stops, {len(hexes)} hexes)")
 
 
@@ -195,7 +235,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if report.ok else 1
     if not shutil.which("tippecanoe"):
         sys.exit("tippecanoe not found on PATH — `brew install tippecanoe`")
-    export()
+    export(metro)
     return 0
 
 
