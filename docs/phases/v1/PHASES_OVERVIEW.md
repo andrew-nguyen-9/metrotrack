@@ -9,11 +9,14 @@ Versioning: `v[phase].[segment].[task]` ([`../../VERSIONING.md`](../../VERSIONIN
 
 | Phase | Branch | Name | Status |
 |-------|--------|------|--------|
-| v1.0 | `v1.0` | Foundation: repo, ETL harness, PostGIS, GTFS loader, one PMTiles map | Planned |
-| v1.1 | `v1.1` | **Mapping pillar** — routes + stops + population/jobs overlay | Planned |
-| v1.2 | `v1.2` | **Funding pillar** — NITA/CTA/Pace/Metra budget vs actuals (ECharts) | Planned |
-| v1.3 | `v1.3` | **Hiring pillar** — weekly scrape → vacancy time series | Planned |
-| v1.4 | `v1.4` | **Job-access score + isochrones** (the signature feature; O6=C). Forecasting deferred to v2 (G8). | Planned |
+| v1.0 | `v1.0` | Foundation: repo, ETL harness, PostGIS, GTFS loader, one PMTiles map | ✅ Shipped (v1.0.0) |
+| v1.1 | `v1.1` | **Mapping pillar** — routes + stops + population/jobs overlay | ✅ Shipped (v1.0.0) |
+| v1.2 | `v1.2` | **Funding pillar** — NITA/CTA/Pace/Metra budget vs actuals (ECharts) | ✅ Shipped (v1.0.0) |
+| v1.3 | `v1.3` | **Hiring pillar** — weekly scrape → vacancy time series | ✅ Shipped (v1.0.0) |
+| v1.4 | `v1.4` | **Job-access score + isochrones** (the signature feature; O6=C). Forecasting deferred to v2 (G8). | ✅ Shipped (v1.0.0) — walk access; full transit routing → v2 |
+
+> **v1 closed:** merged to `main` + tagged `v1.0.0`. Notes in [`ARCHIVE.md`](ARCHIVE.md);
+> next-cycle backlog in [`../../brainstorming/v2-ideas.md`](../../brainstorming/v2-ideas.md).
 
 ## Why this order
 

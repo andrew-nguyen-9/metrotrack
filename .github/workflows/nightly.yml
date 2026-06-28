@@ -1,0 +1,115 @@
+name: nightly
+
+# Full refresh: extract → transform+test → load the Supabase spine → rebuild
+# tiles → redeploy the `metrotrack` Vercel project (serves transit.an9.dev).
+# Runs on a schedule (and on demand). Emails on failure. Secrets required:
+#   SUPABASE_A_DB_URL   — direct Postgres URL for Project A (gold load)
+#   VERCEL_TOKEN        — Vercel access token
+#   VERCEL_ORG_ID       — Vercel org id   (team_l1XTfSv1TIiBFAwM5JmkgzJ3)
+#   VERCEL_PROJECT_ID   — `metrotrack` project id (prj_WdPrwVDC3jzBQZBSoj0Lo9AQVIe1)
+#   SMTP_HOST/SMTP_PORT/SMTP_USERNAME/SMTP_PASSWORD — mail relay for alerts
+#   ALERT_EMAIL         — where failure alerts are sent
+on:
+  schedule:
+    - cron: "0 8 * * *" # 08:00 UTC ≈ 02:00–03:00 America/Chicago
+  workflow_dispatch:
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+# Least privilege: refresh only reads the repo; notify-failure needs nothing.
+permissions:
+  contents: read
+
+env:
+  ASTRO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+
+      - name: Install tippecanoe
+        run: |
+          git clone --depth 1 https://github.com/felt/tippecanoe.git /tmp/tippecanoe
+          make -C /tmp/tippecanoe -j2
+          sudo make -C /tmp/tippecanoe install
+
+      - name: Extract GTFS → bronze (full feeds)
+        run: uv run python pipeline/gtfs.py
+
+      - name: dbt build (silver + gold + tests)
+        working-directory: transform
+        env:
+          DBT_PROFILES_DIR: .
+        run: uv run --project .. dbt build
+
+      - name: Freshness floor — fail loudly if a feed went dark
+        working-directory: transform
+        run: |
+          uv run --project .. python - <<'PY'
+          import duckdb, sys
+          c = duckdb.connect("metrotrack.duckdb", read_only=True)
+          n = c.execute("select count(distinct authority_id) from gold_routes").fetchone()[0]
+          assert n >= 3, f"only {n} authorities have routes — a GTFS feed went dark"
+          print("freshness ok:", n, "authorities")
+          PY
+
+      - name: Load gold → Supabase Project A
+        env:
+          SUPABASE_A_DB_URL: ${{ secrets.SUPABASE_A_DB_URL }}
+        run: uv run python pipeline/load.py
+
+      - name: Rebuild PMTiles + table JSON
+        run: uv run python pipeline/tiles.py
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npx astro build
+
+      - name: Redeploy the metrotrack project (production)
+        working-directory: frontend
+        # VERCEL_ORG_ID + VERCEL_PROJECT_ID bind the CLI to the `metrotrack`
+        # project explicitly (no .vercel link needed); --prod aliases transit.an9.dev.
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: npx vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"
+
+  notify-failure:
+    needs: refresh
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions: {} # no GITHUB_TOKEN scopes — a compromised mail action gets nothing
+    steps:
+      - name: Email on failure
+        # Pinned to a full commit SHA (supply-chain hardening); bump deliberately.
+        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: MetroTrack CI <${{ secrets.SMTP_USERNAME }}>
+          to: ${{ secrets.ALERT_EMAIL }}
+          subject: "MetroTrack nightly failed — run ${{ github.run_id }}"
+          body: |
+            The nightly refresh failed.
+
+            Repo:  ${{ github.repository }}
+            Run:   ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Check the failing step (extract / dbt / freshness floor / load / deploy)
+            in the run log above.

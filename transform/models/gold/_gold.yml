@@ -1,0 +1,49 @@
+version: 2
+
+models:
+  - name: gold_routes
+    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: route_id
+        tests: [not_null]
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_stops
+    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: stop_id
+        tests: [not_null]
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_hex_metrics
+    description: Hex jobs/population shaped for the spine + tile export (hex polygon WKT, SRID 4326).
+    columns:
+      - name: h3
+        tests: [not_null, unique]
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_funding
+    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per authority × year.
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: fiscal_year
+        tests: [not_null]
+  - name: gold_vacancy
+    description: Open-postings time series per service board for the spine + hiring.json export.
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: as_of
+        tests: [not_null]
+  - name: gold_hex_access
+    description: Straight-line walkshed job-access score per hex (jobs reachable within walk_radius_m).
+    columns:
+      - name: h3
+        tests: [not_null, unique]
+      - name: jobs_reachable_walk
+        tests: [not_null]

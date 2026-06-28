@@ -1,0 +1,27 @@
+{
+  "_receipt": "Oracle Recruiting Cloud (Pace), recruitingCEJobRequisitions, siteNumber=CX_1, accessed 2026-06-27. Trimmed to TotalJobsCount + requisition titles.",
+  "TotalJobsCount": 57,
+  "requisitionList": [
+    {"Title": "Mechanic"}, {"Title": "Mechanic Helper"}, {"Title": "Dispatcher and Supervisor I (2)"},
+    {"Title": "Facility Maintenance Specialist"}, {"Title": "Senior Grants Administrator"},
+    {"Title": "Building Maintenance"}, {"Title": "Building Maintenance Personnel"},
+    {"Title": "Building Maintenance Specialist"}, {"Title": "Building Maintenance Person"},
+    {"Title": "Mechanic Helper"}, {"Title": "Mechanic"}, {"Title": "Full Time Bus Operator"},
+    {"Title": "Mechanic"}, {"Title": "Mechanic Helper"}, {"Title": "Full Time Bus Operator"},
+    {"Title": "Mechanic Helper"}, {"Title": "Full Time Bus Operator"}, {"Title": "Full Time Bus Operator"},
+    {"Title": "Passenger Facility Maintenance Specialist"}, {"Title": "Full Time Bus Operator"},
+    {"Title": "Full Time Bus Operator"}, {"Title": "Full Time Bus Operator"}, {"Title": "Full Time Bus Operator"},
+    {"Title": "Sign and Shelter Maintenance Technician"}, {"Title": "Serviceperson"}, {"Title": "Mechanic"},
+    {"Title": "Mechanic Helper (3)"}, {"Title": "Division Manager, Paratransit"}, {"Title": "Dispatcher and Supervisor I"},
+    {"Title": "Foreman"}, {"Title": "Foreman"}, {"Title": "Building Maintenance Technician"},
+    {"Title": "Building Maintenance Specialist"}, {"Title": "Utility Person"}, {"Title": "Mechanic Helper"},
+    {"Title": "Vanpool Service Representative (3)"}, {"Title": "Dispatcher and Supervisor II"},
+    {"Title": "Vanpool Intern (2)"}, {"Title": "Foreman"}, {"Title": "Foreman"}, {"Title": "Mechanic"},
+    {"Title": "Safety & Training Administrator"}, {"Title": "Full Time Bus Operator"}, {"Title": "Division Manager"},
+    {"Title": "Dispatcher and Supervisor"}, {"Title": "Superintendent of Maintenance"}, {"Title": "Vanpool Driver Clerk"},
+    {"Title": "Customer Service Call Representative (2)"}, {"Title": "Service Worker"}, {"Title": "Administrative Assistant"},
+    {"Title": "Operations Administrator II"}, {"Title": "Utility Person"}, {"Title": "Microcomputer Specialist"},
+    {"Title": "Mechanic Helper"}, {"Title": "Executive Administrative Assistant (Finance)"},
+    {"Title": "Maintenance Data Coordinator"}, {"Title": "Dispatcher and Supervisor II"}
+  ]
+}

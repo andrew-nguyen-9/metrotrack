@@ -1,0 +1,32 @@
+{
+  "_fixture": "Schema-faithful openrouteservice foot-walking isochrones response (3 rings around the Chicago Loop, ~[-87.63, 41.88]). TEST FIXTURE ONLY — used to unit-test parse_isochrone; no figure derived from it is published. Real isochrones require ORS_API_KEY (see pipeline/access.py).",
+  "type": "FeatureCollection",
+  "bbox": [-87.645, 41.865, -87.615, 41.895],
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "group_index": 0, "value": 900.0, "center": [-87.63, 41.88] },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.6360,41.8800],[-87.6330,41.8770],[-87.6270,41.8770],[-87.6240,41.8800],[-87.6270,41.8830],[-87.6330,41.8830],[-87.6360,41.8800]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "group_index": 0, "value": 1800.0, "center": [-87.63, 41.88] },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.6420,41.8800],[-87.6360,41.8740],[-87.6240,41.8740],[-87.6180,41.8800],[-87.6240,41.8860],[-87.6360,41.8860],[-87.6420,41.8800]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "group_index": 0, "value": 2700.0, "center": [-87.63, 41.88] },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-87.6480,41.8800],[-87.6390,41.8710],[-87.6210,41.8710],[-87.6120,41.8800],[-87.6210,41.8890],[-87.6390,41.8890],[-87.6480,41.8800]]]
+      }
+    }
+  ],
+  "metadata": { "engine": { "version": "fixture" } }
+}

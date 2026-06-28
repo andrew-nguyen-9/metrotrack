@@ -27,8 +27,19 @@ isochrones · GitHub Actions crons. See `docs/architecture/ARCHITECTURE.md`.
 | `transform/` | dbt + DuckDB project: bronze → silver → gold. |
 | `db/` | Postgres/PostGIS schema + migrations. |
 | `data/` | Committed bronze snapshots (parquet/jsonl). |
-| `frontend/` | Next.js app (the serving path). |
-| `.github/workflows/` | Scheduled scrape + nightly transform. |
+| `frontend/` | Astro app + React islands (the serving path). |
+| `.github/workflows/` | CI gates + scheduled scrape/nightly transform. |
+
+## Development
+
+Python (pipeline + dbt) uses [uv](https://docs.astral.sh/uv/); the frontend uses npm.
+
+```sh
+uv sync                              # install pipeline + dbt deps
+uv run python pipeline/selftest.py   # GATE 1: ETL harness
+(cd transform && DBT_PROFILES_DIR=. uv run --project .. dbt build)  # GATE 2: transforms
+(cd frontend && npm ci && npx astro check && npx astro build)       # GATE 3: frontend
+```
 
 ## Status
 

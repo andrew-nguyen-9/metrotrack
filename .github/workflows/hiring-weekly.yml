@@ -1,0 +1,85 @@
+name: hiring-weekly
+
+# Weekly open-postings snapshot for the hiring pillar: scrape each authority's
+# careers listing → append a dated row to the content-hashed bronze log → refresh
+# gold + the committed hiring.json → commit it all (the receipt). The trend thickens
+# one snapshot per week. The committed data is picked up + deployed by the next
+# nightly run — this job deliberately does NOT deploy to production itself.
+# Secrets: SMTP_*/ALERT_EMAIL (failure mail). A single source failing is skipped,
+# not fatal (pipeline/hiring.py).
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC ≈ 03:00–04:00 America/Chicago
+  workflow_dispatch:
+
+concurrency:
+  group: hiring-weekly
+  cancel-in-progress: false
+
+# Needs write to push the appended bronze snapshot back to the repo.
+permissions:
+  contents: write
+
+env:
+  ASTRO_TELEMETRY_DISABLED: "1"
+  DO_NOT_TRACK: "1"
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+
+      - name: Install Playwright Chromium (renders the JS applicant-tracking systems)
+        run: uv run --with playwright python -m playwright install --with-deps chromium
+
+      - name: Snapshot open postings → append bronze
+        run: uv run --with playwright python pipeline/hiring.py
+
+      - name: dbt build (refresh gold_vacancy + tests)
+        working-directory: transform
+        env:
+          DBT_PROFILES_DIR: .
+        run: uv run --project .. dbt build
+
+      - name: Refresh the committed hiring.json
+        run: uv run python pipeline/hiring_export.py
+
+      - name: Commit the appended snapshot (the weekly receipt)
+        run: |
+          git config user.name  "metrotrack-ci"
+          git config user.email "ci@transit.an9.dev"
+          if ! git diff --quiet -- data/bronze/hiring data/bronze/manifest.json frontend/src/data/hiring.json; then
+            git add data/bronze/hiring data/bronze/manifest.json frontend/src/data/hiring.json
+            git commit -m "data(hiring): weekly open-postings snapshot $(date -u +%F)"
+            git push
+          else
+            echo "no snapshot change this week"
+          fi
+
+  notify-failure:
+    needs: snapshot
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Email on failure
+        uses: dawidd6/action-send-mail@94de994a9f6fffee200243214e17002e2920bb59 # v18
+        with:
+          server_address: ${{ secrets.SMTP_HOST }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          secure: true
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          from: MetroTrack CI <${{ secrets.SMTP_USERNAME }}>
+          to: ${{ secrets.ALERT_EMAIL }}
+          subject: "MetroTrack hiring-weekly failed — run ${{ github.run_id }}"
+          body: |
+            The weekly hiring snapshot failed.
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

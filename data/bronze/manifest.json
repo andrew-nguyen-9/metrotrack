@@ -1,0 +1,138 @@
+{
+  "census/cenpop_bg": {
+    "parquet": "data/bronze/census/cenpop_bg.parquet",
+    "rows": 4002,
+    "sha256": "6503c1ae2f7d9801a62d393a026f097a892de635fc7ae86e8e3dbf51f228132d",
+    "source": "census",
+    "table": "cenpop_bg",
+    "written_at": "2026-06-27T23:37:59.678398+00:00"
+  },
+  "census/lodes_wac": {
+    "parquet": "data/bronze/census/lodes_wac.parquet",
+    "rows": 32056,
+    "sha256": "16ced47e28168d6caaae07185cdfc30045513d77cbf7274c84e4b41cf08eb840",
+    "source": "census",
+    "table": "lodes_wac",
+    "written_at": "2026-06-27T23:37:59.573111+00:00"
+  },
+  "cta/routes": {
+    "parquet": "data/bronze/cta/routes.parquet",
+    "rows": 8,
+    "sha256": "8b62f719129c4e71b26d6fa8533f0da36a6d026e459e30462be09a29c9fd1e01",
+    "source": "cta",
+    "table": "routes",
+    "written_at": "2026-06-27T22:33:28.288257+00:00"
+  },
+  "cta/shapes": {
+    "parquet": "data/bronze/cta/shapes.parquet",
+    "rows": 22396,
+    "sha256": "724de046d0308062d2c9d6bc7072c11af2cfb7309c50ad3a90f7cd759ad17402",
+    "source": "cta",
+    "table": "shapes",
+    "written_at": "2026-06-27T22:33:28.339494+00:00"
+  },
+  "cta/stops": {
+    "parquet": "data/bronze/cta/stops.parquet",
+    "rows": 320,
+    "sha256": "4458f9900b3d0f013523c274fc92798190a4373b1eff9c489ef71cd6d6b6c668",
+    "source": "cta",
+    "table": "stops",
+    "written_at": "2026-06-27T22:33:28.352261+00:00"
+  },
+  "cta/trips": {
+    "parquet": "data/bronze/cta/trips.parquet",
+    "rows": 16,
+    "sha256": "4a43f9cc1cca39ecf55b576fbdaed19c1ebfedbb8e44aec19ffa3b935377dfda",
+    "source": "cta",
+    "table": "trips",
+    "written_at": "2026-06-27T22:33:28.298283+00:00"
+  },
+  "hiring/postings": {
+    "parquet": "data/bronze/hiring/postings.parquet",
+    "rows": 3,
+    "sha256": "473fe8d5e563daf19bda6ba8da3ca0cf9144349968bfd28e9a78b17457b11f73",
+    "source": "hiring",
+    "table": "postings",
+    "written_at": "2026-06-28T00:52:13.181420+00:00"
+  },
+  "metra/routes": {
+    "parquet": "data/bronze/metra/routes.parquet",
+    "rows": 8,
+    "sha256": "d260cd6bf143fea361498beab31bded5a6024b35d5be83a9ecef13d00ca81a3a",
+    "source": "metra",
+    "table": "routes",
+    "written_at": "2026-06-27T22:33:29.063357+00:00"
+  },
+  "metra/shapes": {
+    "parquet": "data/bronze/metra/shapes.parquet",
+    "rows": 3982,
+    "sha256": "d1dcc07c987c277d20636ad3ddd31f886a47de1b218db82a96d090e8fe1740c6",
+    "source": "metra",
+    "table": "shapes",
+    "written_at": "2026-06-27T22:33:29.090568+00:00"
+  },
+  "metra/stops": {
+    "parquet": "data/bronze/metra/stops.parquet",
+    "rows": 241,
+    "sha256": "06d60c72f450d97e738df12bcb174c3a705b7cd050c6498c48ccea1b7b7b321e",
+    "source": "metra",
+    "table": "stops",
+    "written_at": "2026-06-27T22:33:29.101676+00:00"
+  },
+  "metra/trips": {
+    "parquet": "data/bronze/metra/trips.parquet",
+    "rows": 16,
+    "sha256": "a21bde22b7dd1dd4b86199e6221fc7a179eba0b14e30f019590a15d8b49fd902",
+    "source": "metra",
+    "table": "trips",
+    "written_at": "2026-06-27T22:33:29.071621+00:00"
+  },
+  "ntd/operating": {
+    "parquet": "data/bronze/ntd/operating.parquet",
+    "rows": 9,
+    "sha256": "9fff039b2873f636e373e847eed41a37c2a74c6003aee3f0ff4ffef3b7ca485b",
+    "source": "ntd",
+    "table": "operating",
+    "written_at": "2026-06-28T00:26:20.182193+00:00"
+  },
+  "pace/routes": {
+    "parquet": "data/bronze/pace/routes.parquet",
+    "rows": 8,
+    "sha256": "fdc5f9517a25da90f5ca651be3c78309ce64496de86450d40f54e0e4c25056c8",
+    "source": "pace",
+    "table": "routes",
+    "written_at": "2026-06-27T22:33:31.543571+00:00"
+  },
+  "pace/shapes": {
+    "parquet": "data/bronze/pace/shapes.parquet",
+    "rows": 11363,
+    "sha256": "7e3995f591afcd3f3733c483d44fb9bd01f3ae1ceb5f179c0c575f42a9df64de",
+    "source": "pace",
+    "table": "shapes",
+    "written_at": "2026-06-27T22:33:31.577191+00:00"
+  },
+  "pace/stops": {
+    "parquet": "data/bronze/pace/stops.parquet",
+    "rows": 320,
+    "sha256": "afc7f4038aea7505b3e8dafc3dbe2b583db3b050a21aff6ef70f7c0bbed0b277",
+    "source": "pace",
+    "table": "stops",
+    "written_at": "2026-06-27T22:33:31.588207+00:00"
+  },
+  "pace/trips": {
+    "parquet": "data/bronze/pace/trips.parquet",
+    "rows": 16,
+    "sha256": "e89015e739ffa927afc0a659e024d338abb993900b9dd5b5c6afcab2630c8c2a",
+    "source": "pace",
+    "table": "trips",
+    "written_at": "2026-06-27T22:33:31.551615+00:00"
+  },
+  "rta/budget": {
+    "parquet": "data/bronze/rta/budget.parquet",
+    "rows": 15,
+    "sha256": "afc9dfec1b3ae014b26419dc33b4224ddccd2ccf660e5633ed323b8e8e588282",
+    "source": "rta",
+    "table": "budget",
+    "written_at": "2026-06-28T00:26:20.197397+00:00"
+  }
+}

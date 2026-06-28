@@ -1,0 +1,33 @@
+name: metrotrack
+version: "1.0.0"
+config-version: 2
+
+profile: metrotrack
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# Bronze is content-hashed parquet on disk (pipeline/), read by path via DuckDB.
+# Override the dir for full (non-sample) runs: `dbt build --vars '{bronze_dir: ...}'`.
+vars:
+  bronze_dir: "../data/bronze"
+  # H3 resolution for the population/jobs overlay (res 8 ≈ 0.74 km²/cell). See
+  # docs/phases/v1/v1.1/PLAN.md. Override: `dbt build --vars '{h3_res: 9}'`.
+  h3_res: 8
+  # Walk radius (metres) for the v1.4 straight-line walkshed access score (½ mi ≈
+  # 805 m, ACCESS_SCORE G5). Override: `dbt build --vars '{walk_radius_m: 1609}'`.
+  walk_radius_m: 805
+
+# Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
+# (serving marts). Silver is materialized as a table so geometry is baked into
+# metrotrack.duckdb — the tile export (v1.0.4) reads it without depending on the
+# process cwd that the bronze read_parquet paths are relative to.
+models:
+  metrotrack:
+    silver:
+      +materialized: table
+    gold:
+      +materialized: table

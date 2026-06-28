@@ -1,0 +1,164 @@
+---
+import Base from "../layouts/Base.astro";
+import TransitMap from "../components/TransitMap.tsx";
+import transit from "../data/transit.json";
+import { authorityLabel, type TransitData, type HexCell } from "../lib/transit";
+
+// Three pillars (docs/overview/VISION.md). Numbers are intentionally absent until
+// the pipelines that source them land — honest by construction.
+const pillars = [
+  { name: "Funding", body: "NITA / CTA / Pace / Metra budgets vs. actuals — where the money goes." },
+  { name: "Mapping", body: "Bus & rail usage against population, jobs, and destinations." },
+  { name: "Hiring", body: "Open reqs and understaffing tracked weekly into a vacancy trend." },
+];
+
+const data = transit as unknown as TransitData;
+const bbox = data.bbox;
+
+// Routes grouped by authority for the table fallback.
+const groups = new Map<string, TransitData["routes"]>();
+for (const r of data.routes) {
+  const arr = groups.get(r.authority_id) ?? [];
+  arr.push(r);
+  groups.set(r.authority_id, arr);
+}
+const authorities = [...groups.keys()].sort();
+
+// Overlay (hex) table fallback: top areas by jobs and by population.
+const hex = data.hex;
+const hexTables: { title: string; rows: HexCell[] }[] = [
+  { title: "Top areas by jobs", rows: hex.topJobs },
+  { title: "Top areas by population", rows: hex.topPopulation },
+  { title: "Top areas by job access (½-mi walk)", rows: hex.topAccess },
+];
+---
+
+<Base>
+  <section class="max-w-2xl">
+    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
+      Chicagoland transit, measured.
+    </h1>
+    <p class="mt-4 text-text-muted text-lg">
+      A neutral, public accountability tracker — funding, usage, hiring, and a
+      job-access score — built on open data. Every figure shows its source
+      and&nbsp;<span class="tabular">as-of</span> date.
+    </p>
+  </section>
+
+  <ul class="mt-10 grid gap-4 sm:grid-cols-3">
+    {pillars.map((p) => (
+      <li class="rounded-lg border border-hairline bg-surface p-5">
+        <h2 class="font-medium">{p.name}</h2>
+        <p class="mt-2 text-sm text-text-muted">{p.body}</p>
+      </li>
+    ))}
+  </ul>
+
+  <section class="mt-12" aria-labelledby="map-heading">
+    <h2 id="map-heading" class="text-xl font-medium">Routes, stops &amp; the people they serve</h2>
+    <p class="mt-1 text-sm text-text-muted">
+      CTA, Pace, and Metra routes and stops, served as vector tiles, over an
+      optional hex overlay of <span class="tabular">jobs</span> (Census LODES),&nbsp;<span
+      class="tabular">population</span> (Census 2020), and a&nbsp;<span
+      class="tabular">job-access</span> score (jobs reachable within a ½-mi walk)
+      across Cook County. Use the overlay control on the map; each cell is an H3 hexagon.
+    </p>
+
+    <div class="mt-4 overflow-hidden rounded-lg border border-hairline bg-surface">
+      <div class="h-[60vh] min-h-80 w-full">
+        <TransitMap client:only="react" pmtilesUrl="/transit.pmtiles" bbox={bbox} hex={data.hex} />
+      </div>
+      <ul class="flex flex-wrap gap-4 border-t border-hairline px-4 py-2 text-sm text-text-muted">
+        <li class="flex items-center gap-2" aria-hidden="true">
+          <span class="inline-block h-0.5 w-5" style="background:#8a94a3"></span> Routes
+        </li>
+        <li class="flex items-center gap-2" aria-hidden="true">
+          <span class="inline-block h-2 w-2 rounded-full" style="background:#2bb8cf"></span> Stops
+        </li>
+        <li>
+          {data.routes.length} routes · <span class="tabular">{data.stopTotal}</span> stops ·
+          <span class="tabular">{hex.count.toLocaleString()}</span> hex cells (jobs · population · access)
+        </li>
+      </ul>
+    </div>
+
+    <!-- Accessible, no-JS fallback: the map is an enhancement; this table carries
+         the same data with authority encoded by name (not color). -->
+    <details class="mt-4 rounded-lg border border-hairline bg-surface">
+      <summary class="cursor-pointer px-4 py-3 font-medium">
+        Route &amp; stop data (table)
+      </summary>
+      <div class="overflow-x-auto px-4 pb-4">
+        <table class="w-full text-left text-sm">
+          <caption class="sr-only">Sample routes and stop counts for CTA, Pace, and Metra</caption>
+          <thead>
+            <tr class="border-b border-hairline text-text-muted">
+              <th scope="col" class="py-2 pr-4 font-medium">Authority</th>
+              <th scope="col" class="py-2 pr-4 font-medium">Route</th>
+              <th scope="col" class="py-2 font-medium">Name</th>
+            </tr>
+          </thead>
+          <tbody>
+            {authorities.map((a) => (
+              <>
+                <tr class="border-b border-hairline/60">
+                  <th scope="rowgroup" colspan="3" class="pt-4 pb-1 text-text">
+                    {authorityLabel(a)}
+                    <span class="text-text-muted font-normal">
+                      — <span class="tabular">{data.stopCounts[a] ?? 0}</span> stops sampled
+                    </span>
+                  </th>
+                </tr>
+                {groups.get(a)!.map((r) => (
+                  <tr class="border-b border-hairline/40">
+                    <td class="py-1.5 pr-4 text-text-muted">{authorityLabel(r.authority_id)}</td>
+                    <td class="py-1.5 pr-4 tabular">{r.short_name ?? r.route_id}</td>
+                    <td class="py-1.5">{r.long_name ?? "—"}</td>
+                  </tr>
+                ))}
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <!-- Overlay fallback: the choropleth's data as plain tables (no JS, no color). -->
+    <details class="mt-4 rounded-lg border border-hairline bg-surface">
+      <summary class="cursor-pointer px-4 py-3 font-medium">
+        Population &amp; jobs by area (table)
+      </summary>
+      <div class="grid gap-6 px-4 pb-4 sm:grid-cols-2">
+        {hexTables.map((t) => (
+          <table class="w-full text-left text-sm">
+            <caption class="py-2 text-left font-medium">{t.title}</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Hex cell (H3)</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Jobs</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Population</th>
+                <th scope="col" class="py-2 font-medium">Reachable</th>
+              </tr>
+            </thead>
+            <tbody>
+              {t.rows.map((c) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4 font-mono text-xs text-text-muted">{c.h3}</td>
+                  <td class="py-1.5 pr-4 tabular">{c.jobs.toLocaleString()}</td>
+                  <td class="py-1.5 pr-4 tabular">{c.population.toLocaleString()}</td>
+                  <td class="py-1.5 tabular">{c.access?.toLocaleString() ?? "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+      </div>
+      <p class="px-4 pb-4 text-xs text-text-muted">
+        Jobs: U.S. Census LEHD LODES8 (2022, workplace). Population: U.S. Census 2020
+        Centers of Population. Job access: jobs reachable within a ½-mi straight-line
+        walk (openrouteservice network isochrones when configured — see ADR-003).
+        Aggregated to H3 hex cells over Cook County.
+      </p>
+    </details>
+  </section>
+</Base>

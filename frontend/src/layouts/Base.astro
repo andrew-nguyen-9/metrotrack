@@ -1,0 +1,65 @@
+---
+import "../styles/globals.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "MetroTrack — Chicagoland Transit Tracker",
+  description = "A neutral, public accountability tracker for Chicagoland transit: funding, a usage map against population and jobs, hiring, and a job-access score.",
+} = Astro.props;
+
+const ogImage = new URL("/og.png", Astro.site).href;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class="min-h-dvh flex flex-col">
+    <header class="border-b border-hairline">
+      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center gap-6">
+        <a href="/" aria-label="MetroTrack home">
+          <img src="/logo-wide.svg" alt="MetroTrack Chicago" height="28" class="h-7 w-auto" />
+        </a>
+        <nav aria-label="Primary" class="flex gap-4 text-sm">
+          <a href="/" class="text-text-muted hover:text-text">Map</a>
+          <a href="/funding" class="text-text-muted hover:text-text">Funding</a>
+          <a href="/hiring" class="text-text-muted hover:text-text">Hiring</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <slot />
+    </main>
+
+    <footer class="border-t border-hairline text-text-muted">
+      <div class="mx-auto max-w-6xl px-4 py-6 text-sm">
+        <p>
+          MetroTrack — independent, non-affiliated. Data from CTA, Pace, Metra (GTFS),
+          the Chicago Data Portal, and the U.S. Census. Map data ©
+          <a class="underline" href="https://www.openstreetmap.org/copyright"
+            >OpenStreetMap</a
+          > contributors.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

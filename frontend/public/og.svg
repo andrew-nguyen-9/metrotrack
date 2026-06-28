@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="MetroTrack — Chicagoland transit, measured.">
+  <rect width="1200" height="630" fill="#15171c"/>
+  <rect x="0" y="0" width="1200" height="6" fill="#2ec5d3"/>
+  <g transform="translate(96,235)">
+    <circle cx="40" cy="0" r="40" fill="#C60C30"/>
+    <text x="108" y="18" font-family="Helvetica, Arial, sans-serif" font-size="84" font-weight="700" fill="#f0f2f5">MetroTrack</text>
+  </g>
+  <text x="98" y="370" font-family="Helvetica, Arial, sans-serif" font-size="40" fill="#aeb4bd">Chicagoland transit, measured.</text>
+  <text x="98" y="430" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#7c828b">Funding · Usage map · Hiring · Job-access score</text>
+  <text x="98" y="560" font-family="Helvetica, Arial, sans-serif" font-size="24" fill="#2ec5d3">transit.an9.dev</text>
+</svg>
