@@ -36,13 +36,17 @@ Alternatives):
 ## Phases (the plan)
 
 Each phase has a folder under [`phases/`](phases): overview, per-segment plans,
-and (at close) an archive. Current: [`phases/v1/PHASES_OVERVIEW.md`](phases/v1/PHASES_OVERVIEW.md).
+and (at close) an archive. v1: [`phases/v1/PHASES_OVERVIEW.md`](phases/v1/PHASES_OVERVIEW.md)
+(✅ shipped). Current: [`phases/v2/PHASES_OVERVIEW.md`](phases/v2/PHASES_OVERVIEW.md)
+— multi-city, with an autonomous rollout loop ([`phases/v2/LOOP_PROMPT.md`](phases/v2/LOOP_PROMPT.md))
+driven off a progress ledger ([`phases/v2/PROGRESS.md`](phases/v2/PROGRESS.md)).
 
 ## Brainstorming (what might come next)
 
 - [`brainstorming/v1-ideas.md`](brainstorming/v1-ideas.md) — the seed backlog + candidate v2+ features.
 - [`brainstorming/v2-ideas.md`](brainstorming/v2-ideas.md) — next-cycle backlog, seeded at v1 close.
 - [`brainstorming/DESIGN_QUESTIONNAIRE.md`](brainstorming/DESIGN_QUESTIONNAIRE.md) — front-loaded MCQs to lock design/scope/modeling before build. Answers graduate into phases + design-system + ADRs.
+- [`brainstorming/v2-QUESTIONNAIRE.md`](brainstorming/v2-QUESTIONNAIRE.md) — 200 MCQs scoping v2 (multi-city, homepage/city directory, SEO, per-region RSS, autonomous build loops). Answers graduate into `phases/v2/` + ADRs.
 
 ## Conventions for this folder
 
