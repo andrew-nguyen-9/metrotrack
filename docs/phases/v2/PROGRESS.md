@@ -71,4 +71,5 @@ A metro flips to `done` only when **all** pass and evidence is attached to its P
 Append one line per unit. Newest at top. Format:
 `YYYY-MM-DD · <slug or segment> · <status> · <one line> · <PR/branch>`
 
+- 2026-06-27 · v2.0.1 · done · metros registry table + chicago.toml authored truth; selftest 24/24, security advisors clean · v2
 - 2026-06-27 · v2 · seeded · phase folder + LOOP_PROMPT + ledger created · main

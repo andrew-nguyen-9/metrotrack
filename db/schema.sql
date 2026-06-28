@@ -14,6 +14,30 @@
 
 create extension if not exists postgis with schema extensions;
 
+-- ── metros ────────────────────────────────────────────────────────────
+-- Multi-tenant registry [v2.0.1]. metros/<slug>.toml is the authored truth;
+-- sync_metros() (pipeline/load.py) mirrors this serving subset. metro_id = slug =
+-- the tenant key v2.0.2 adds to every spine table below.
+create table if not exists public.metros (
+  metro_id    text primary key,                        -- = slug; tenant key everywhere
+  name        text not null,
+  slug        text not null unique,
+  tz          text not null,                            -- IANA tz; store UTC, render here
+  status      text not null default 'soon'
+              check (status in ('live', 'soon')),
+  bbox        extensions.geometry(Polygon, 4326),       -- metro extent envelope (WGS84)
+  as_of       date,
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists metros_bbox_gix
+  on public.metros using gist (bbox extensions.gist_geometry_ops_2d);
+
+alter table public.metros enable row level security;
+drop policy if exists "public read metros" on public.metros;
+create policy "public read metros" on public.metros
+  for select to anon, authenticated using (true);
+
 -- ── authorities ───────────────────────────────────────────────────────
 -- The transit agencies. Short stable code as PK so GTFS rows join cleanly.
 create table if not exists public.authorities (

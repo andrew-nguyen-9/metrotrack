@@ -1,0 +1,54 @@
+# metros/chicago.toml — authored source of truth for the Chicago metro. [B2c, B6a]
+#
+# Edit HERE to change the metro; `sync_metros()` (pipeline/load.py) mirrors the
+# serving subset (name, slug, tz, status, bbox) into public.metros. Never hand-edit
+# that table. The pipeline reads the rest (agencies, gtfs, ntd, census) once
+# v2.0.3 wires `--metro`. Contract: metros/_schema.md.
+
+slug   = "chicago"
+name   = "Chicago"
+region = "Chicagoland"            # the whole metro region (display) [B16a]
+tz     = "America/Chicago"        # IANA tz; store UTC, render here [B15a]
+status = "live"                   # live | soon [C12a]
+
+# [minLon, minLat, maxLon, maxLat] in WGS84 (EPSG:4326). Derived from v1 stop
+# extents (pipeline/tiles.py) — the map's default viewport + the metros.bbox column.
+bbox = [-88.6175, 41.4183333, -87.5477778, 42.5858333]
+
+[census]
+state_fips  = "17"                # Illinois
+county_fips = ["031"]             # Cook County (v1 scope; collar counties later)
+lodes_state = "il"                # LEHD LODES8 state slug
+lodes_year  = 2022                # latest stable LODES8 vintage
+
+# ── agencies ────────────────────────────────────────────────────────────
+# mode: bus | rail | multi. ntd_ids: FTA National Transit Database reporter ids
+# (multiple fold into one authority — Pace runs Regional ADA Paratransit too).
+
+[[agencies]]
+id       = "cta"
+name     = "Chicago Transit Authority"
+mode     = "multi"
+url      = "https://www.transitchicago.com"
+gtfs_url = "https://www.transitchicago.com/downloads/sch_data/google_transit.zip"
+ntd_ids  = ["50066"]
+hiring   = { method = "taleo", url = "https://chicagotransit.taleo.net/careersection/ex/jobsearch.ftl" }
+
+[[agencies]]
+id       = "metra"
+name     = "Metra Commuter Rail"
+mode     = "rail"
+url      = "https://metra.com"
+gtfs_url = "https://schedules.metrarail.com/gtfs/schedule.zip"
+ntd_ids  = ["50118"]
+hiring   = { method = "cadient", url = "https://cta.cadienttalent.com/index.jsp?seq=postingSearchResults&applicationName=MetraKTMDReqExt&locale=en_US&event=com.deploy.application.ca.plugin.PostingSearch.doSearch&source=alljobs" }
+
+[[agencies]]
+id                = "pace"
+name              = "Pace Suburban Bus"
+mode              = "bus"
+url               = "https://www.pacebus.com"
+gtfs_url          = ""             # discovered (rotating dated path) from gtfs_discover_url
+gtfs_discover_url = "https://www.pacebus.com/gtfs"
+ntd_ids           = ["50113", "50182"]   # Suburban Bus + Regional ADA Paratransit
+hiring            = { method = "oracle", url = "https://iaymqy.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/recruitingCEJobRequisitions?onlyData=true&finder=findReqs;siteNumber=CX_1,limit=200&expand=requisitionList" }
