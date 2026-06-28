@@ -1,9 +1,14 @@
 version: 2
 
+# Every gold model carries a NOT NULL metro_id (= var 'metro'), the left side of the
+# (metro_id, natural_key) the loader upserts on. Composite uniqueness on each gold
+# serving table is asserted by the singular tests under tests/ (gold_* _unique.sql).
 models:
   - name: gold_routes
     description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: route_id
@@ -13,6 +18,8 @@ models:
   - name: gold_stops
     description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: stop_id
@@ -22,13 +29,17 @@ models:
   - name: gold_hex_metrics
     description: Hex jobs/population shaped for the spine + tile export (hex polygon WKT, SRID 4326).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: h3
-        tests: [not_null, unique]
+        tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_metrics_unique.sql
       - name: geom_wkt
         tests: [not_null]
   - name: gold_funding
-    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per authority × year.
+    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per metro × authority × year.
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: fiscal_year
@@ -36,6 +47,8 @@ models:
   - name: gold_vacancy
     description: Open-postings time series per service board for the spine + hiring.json export.
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: as_of
@@ -43,7 +56,9 @@ models:
   - name: gold_hex_access
     description: Straight-line walkshed job-access score per hex (jobs reachable within walk_radius_m).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: h3
-        tests: [not_null, unique]
+        tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_access_unique.sql
       - name: jobs_reachable_walk
         tests: [not_null]

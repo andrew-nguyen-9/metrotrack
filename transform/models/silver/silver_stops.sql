@@ -1,21 +1,22 @@
 -- Silver stops: one validated point per (authority, stop_id).
 -- Reads the content-hashed bronze parquet; authority is derived from the path
--- (data/bronze/<authority>/stops.parquet). Coords are SRID 4326 (GTFS is WGS84).
+-- (data/bronze/<metro>/<authority>/stops.parquet). Coords are SRID 4326 (GTFS is WGS84).
 with src as (
     select
-        regexp_extract(filename, 'bronze/([^/]+)/', 1) as authority_id,
+        regexp_extract(filename, '/{{ var("metro") }}/([^/]+)/', 1) as authority_id,
         stop_id,
         nullif(stop_name, '') as name,
         try_cast(stop_lon as double) as lon,
         try_cast(stop_lat as double) as lat
     from read_parquet(
-        '{{ var("bronze_dir") }}/*/stops.parquet',
+        '{{ var("bronze_dir") }}/{{ var("metro") }}/*/stops.parquet',
         filename = true,
         union_by_name = true
     )
 )
 
 select
+    '{{ var("metro") }}' as metro_id,
     authority_id,
     stop_id,
     name,

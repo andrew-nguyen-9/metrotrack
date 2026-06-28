@@ -14,6 +14,10 @@ clean-targets: ["target", "dbt_packages"]
 # Override the dir for full (non-sample) runs: `dbt build --vars '{bronze_dir: ...}'`.
 vars:
   bronze_dir: "../data/bronze"
+  # Metro slug. Bronze lives under <bronze_dir>/<metro>/<source>/... (v2.0.3) and
+  # every silver/gold row is tagged with this as metro_id. One model set, N metros:
+  # `dbt build --vars '{metro: chicago}'`. Default keeps single-metro runs working.
+  metro: "chicago"
   # H3 resolution for the population/jobs overlay (res 8 ≈ 0.74 km²/cell). See
   # docs/phases/v1/v1.1/PLAN.md. Override: `dbt build --vars '{h3_res: 9}'`.
   h3_res: 8
