@@ -34,10 +34,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
   </head>
   <body class="min-h-dvh flex flex-col">
     <header class="border-b border-hairline">
-      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center">
+      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center gap-6">
         <a href="/" aria-label="MetroTrack home">
           <img src="/logo-wide.svg" alt="MetroTrack Chicago" height="28" class="h-7 w-auto" />
         </a>
+        <nav aria-label="Primary" class="flex gap-4 text-sm">
+          <a href="/" class="text-text-muted hover:text-text">Map</a>
+          <a href="/funding" class="text-text-muted hover:text-text">Funding</a>
+        </nav>
       </div>
     </header>
 
