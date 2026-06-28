@@ -196,6 +196,26 @@ Then emit: **FUNDING PILLAR GATE GREEN**.
 - **`$/rider` and ratio trends deferred** (YAGNI for v1.2; the inputs are in NTD for
   a later segment).
 
+### Build-time refinements (resolved during v1.2.2–v1.2.6)
+
+- **RTA primary source = the 2025 Adopted Budget, Table 2** ("Statement of Regional
+  Revenues and Expenses"), which carries one column per year (2023 Actual, 2024
+  Estimate, 2025 Budget, 2026/2027 Plan). The `rta_kind` column preserves each year's
+  true nature so a plan/estimate is never mislabeled as a budget. The source PDF +
+  `SOURCE.md` citation are committed as the receipt; `parse_rta_budget` reconciles the
+  per-board rows against the document's printed total.
+- **NTD span is 3 years** (2022–2024) — the `g27i-aq2u` "Metrics (by Agency)" view's
+  current range — not the 5–8 the plan guessed. CTA/Metra cross-validate against the
+  RTA figures within ~2%, confirming the definitions are compatible; Pace's larger gap
+  (folds in ADA Paratransit) is disclosed on the page.
+- **Cross-source `variance` dropped.** Computing `RTA − NTD` would conflate a source
+  definition gap with real budget variance, so gold keeps only the NTD-internal
+  `farebox_recovery`; the UI compares the two series side by side instead.
+- **Chart y-axis pinned to 0** (a clipped baseline would exaggerate the gap); budget
+  vs actual distinguished by ECharts `aria` decal patterns + legend + position, not
+  color alone. Funding island bundle ≈167 KB gz (echarts, tree-shaken) — a documented
+  overage of the per-page JS budget, like the map page (DoD allows it for viz pages).
+
 ## File map (new/changed)
 
 ```
