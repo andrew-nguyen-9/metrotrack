@@ -1,10 +1,13 @@
-"""Load gold → the Supabase spine (public.authorities/routes/stops). Idempotent.
+"""Load gold → the Supabase spine. Idempotent, per-metro.
 
 Reads the dbt-built gold tables from transform/metrotrack.duckdb and upserts them
-into Postgres (Project A). Geometry travels as WKT and is rebuilt with
-ST_GeomFromText at SRID 4326; rows are replaced by their natural key, so a
-re-run never duplicates. Inserts go through the direct Postgres connection (the
-postgres role bypasses RLS) — never the client bundle.
+into Postgres (Project A). Every row is tagged with --metro=<slug> (default
+'chicago') and keyed on (metro_id, <natural_key>), so a re-run never duplicates
+and metros never collide. Geometry travels as WKT and is rebuilt with
+ST_GeomFromText at SRID 4326. `as_of` records the load date (data-as-of); v2.0.4
+will refine it to the source's own as_of and populate source_hash from gold.
+Inserts go through the direct Postgres connection (the postgres role bypasses
+RLS) — never the client bundle.
 
 Env: SUPABASE_A_DB_URL (postgresql://...). Run after `dbt build`.
 """
@@ -40,69 +43,77 @@ on conflict (metro_id) do update set
 
 ROUTE_UPSERT = """
 insert into public.routes
-  (authority_id, route_id, short_name, long_name, route_type, color, text_color, geom)
+  (metro_id, authority_id, route_id, short_name, long_name, route_type,
+   color, text_color, geom, as_of)
 -- ST_Multi: a route with a single shape stitches to a LINESTRING, which the
 -- MultiLineString column would reject; coerce it to MULTILINESTRING.
-values (%s, %s, %s, %s, %s, %s, %s, extensions.ST_Multi(extensions.ST_GeomFromText(%s, 4326)))
-on conflict (authority_id, route_id) do update set
+values (%s, %s, %s, %s, %s, %s, %s, %s,
+        extensions.ST_Multi(extensions.ST_GeomFromText(%s, 4326)), %s)
+on conflict (metro_id, authority_id, route_id) do update set
   short_name = excluded.short_name,
   long_name  = excluded.long_name,
   route_type = excluded.route_type,
   color      = excluded.color,
   text_color = excluded.text_color,
-  geom       = excluded.geom
+  geom       = excluded.geom,
+  as_of      = excluded.as_of
 """
 
 STOP_UPSERT = """
-insert into public.stops (authority_id, stop_id, name, geom)
-values (%s, %s, %s, extensions.ST_GeomFromText(%s, 4326))
-on conflict (authority_id, stop_id) do update set
-  name = excluded.name,
-  geom = excluded.geom
+insert into public.stops (metro_id, authority_id, stop_id, name, geom, as_of)
+values (%s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+on conflict (metro_id, authority_id, stop_id) do update set
+  name  = excluded.name,
+  geom  = excluded.geom,
+  as_of = excluded.as_of
 """
 
 HEX_UPSERT = """
 insert into public.hex_metrics
-  (h3, resolution, jobs, population, jobs_per_1k_pop, geom)
-values (%s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326))
-on conflict (h3) do update set
+  (metro_id, h3, resolution, jobs, population, jobs_per_1k_pop, geom, as_of)
+values (%s, %s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+on conflict (metro_id, h3) do update set
   resolution      = excluded.resolution,
   jobs            = excluded.jobs,
   population      = excluded.population,
   jobs_per_1k_pop = excluded.jobs_per_1k_pop,
-  geom            = excluded.geom
+  geom            = excluded.geom,
+  as_of           = excluded.as_of
 """
 
 FINANCE_UPSERT = """
 insert into public.agency_finances
-  (authority_id, fiscal_year, actual_audited, fare_revenue, unlinked_trips,
-   rta_kind, rta_amount, farebox_recovery)
-values (%s, %s, %s, %s, %s, %s, %s, %s)
-on conflict (authority_id, fiscal_year) do update set
+  (metro_id, authority_id, fiscal_year, actual_audited, fare_revenue, unlinked_trips,
+   rta_kind, rta_amount, farebox_recovery, as_of)
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+on conflict (metro_id, authority_id, fiscal_year) do update set
   actual_audited   = excluded.actual_audited,
   fare_revenue     = excluded.fare_revenue,
   unlinked_trips   = excluded.unlinked_trips,
   rta_kind         = excluded.rta_kind,
   rta_amount       = excluded.rta_amount,
-  farebox_recovery = excluded.farebox_recovery
+  farebox_recovery = excluded.farebox_recovery,
+  as_of            = excluded.as_of
 """
 
+# vacancy as_of is the snapshot's own date (part of the key), not the load date.
 VACANCY_UPSERT = """
 insert into public.vacancy_postings
-  (authority_id, as_of, open_postings, source_url, method)
-values (%s, %s, %s, %s, %s)
-on conflict (authority_id, as_of) do update set
+  (metro_id, authority_id, as_of, open_postings, source_url, method)
+values (%s, %s, %s, %s, %s, %s)
+on conflict (metro_id, authority_id, as_of) do update set
   open_postings = excluded.open_postings,
   source_url    = excluded.source_url,
   method        = excluded.method
 """
 
 ACCESS_UPSERT = """
-insert into public.hex_access (h3, jobs_reachable_walk, walk_radius_m)
-values (%s, %s, %s)
-on conflict (h3) do update set
+insert into public.hex_access (metro_id, h3, jobs_reachable_walk, walk_radius_m, as_of)
+values (%s, %s, %s, %s, %s)
+on conflict (metro_id, h3) do update set
   jobs_reachable_walk = excluded.jobs_reachable_walk,
-  walk_radius_m       = excluded.walk_radius_m
+  walk_radius_m       = excluded.walk_radius_m,
+  as_of               = excluded.as_of
 """
 
 
@@ -131,6 +142,8 @@ def sync_metros(db_url: str | None = None) -> int:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--metro", default="chicago",
+                    help="Metro slug to tag loaded rows (default: chicago).")
     ap.add_argument("--metros", action="store_true",
                     help="Only sync the metros registry (no gold load); skips DuckDB.")
     args = ap.parse_args()
@@ -138,6 +151,9 @@ def main() -> int:
     db_url = _db_url()
     if args.metros:
         return sync_metros(db_url)
+
+    metro = metros_mod.load_metro(args.metro).metro_id  # validates slug; fails loudly on a typo
+    today = date.today().isoformat()
 
     sync_metros(db_url)  # keep the registry current on every full load
     if not DUCKDB.exists():
@@ -167,19 +183,22 @@ def main() -> int:
     ).fetchall()
     con.close()
 
+    # Tag every row with metro_id (front) + as_of=today (back). vacancy already
+    # carries its own as_of in the natural key, so it gets metro_id only.
     with psycopg.connect(db_url) as pg:
         with pg.cursor() as cur:
-            cur.executemany(ROUTE_UPSERT, routes)
-            cur.executemany(STOP_UPSERT, stops)
-            cur.executemany(HEX_UPSERT, hexes)
-            cur.executemany(FINANCE_UPSERT, finances)
-            cur.executemany(VACANCY_UPSERT, vacancy)
-            cur.executemany(ACCESS_UPSERT, access)
+            cur.executemany(ROUTE_UPSERT,   [(metro, *r, today) for r in routes])
+            cur.executemany(STOP_UPSERT,    [(metro, *r, today) for r in stops])
+            cur.executemany(HEX_UPSERT,     [(metro, *r, today) for r in hexes])
+            cur.executemany(FINANCE_UPSERT, [(metro, *r, today) for r in finances])
+            cur.executemany(VACANCY_UPSERT, [(metro, *r) for r in vacancy])
+            cur.executemany(ACCESS_UPSERT,  [(metro, *r, today) for r in access])
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
           f"{len(hexes)} hex cells, {len(finances)} finance rows, "
-          f"{len(vacancy)} vacancy rows, {len(access)} access rows → Project A")
+          f"{len(vacancy)} vacancy rows, {len(access)} access rows → Project A "
+          f"(metro={metro})")
     return 0
 
 

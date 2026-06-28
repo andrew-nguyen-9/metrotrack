@@ -1,7 +1,8 @@
--- MetroTrack — Project A spine (authoritative schema snapshot). [v1.0.2]
+-- MetroTrack — Project A spine (authoritative schema snapshot). [v2.0.2]
 --
--- Foundation tables: authorities, routes, stops. PostGIS geometry in SRID 4326
--- (WGS84 lat/lng), GiST spatial indexes, RLS public-read on every table.
+-- Multi-tenant: every spine table carries a NOT NULL metro_id FK → public.metros
+-- (= slug), with collision-prone natural keys scoped to the tenant. PostGIS
+-- geometry in SRID 4326 (WGS84 lat/lng), GiST spatial indexes, RLS public-read.
 --
 -- PostGIS lives in the `extensions` schema (Supabase convention — keeps `public`
 -- clean for the security advisor's extension_in_public check). The geometry type
@@ -39,9 +40,12 @@ create policy "public read metros" on public.metros
   for select to anon, authenticated using (true);
 
 -- ── authorities ───────────────────────────────────────────────────────
--- The transit agencies. Short stable code as PK so GTFS rows join cleanly.
+-- The transit agencies. Short stable code as PK so GTFS rows join cleanly. Agency
+-- codes are globally unique, so the PK stays single-column; metro_id is a NOT NULL
+-- FK tag for per-metro filtering (no composite PK → no composite FK cascade). [B18a]
 create table if not exists public.authorities (
   id          text primary key,                       -- 'cta' | 'pace' | 'metra'
+  metro_id    text not null references public.metros(metro_id),
   name        text not null,
   mode        text not null,                          -- 'bus' | 'rail' | 'multi'
   url         text,
@@ -49,9 +53,10 @@ create table if not exists public.authorities (
 );
 
 -- ── routes ────────────────────────────────────────────────────────────
--- GTFS routes. route_id is unique only within an authority, hence the composite.
+-- GTFS routes. route_id collides across metros, so the unique is tenant-scoped.
 create table if not exists public.routes (
   id            bigint generated always as identity primary key,
+  metro_id      text not null references public.metros(metro_id),
   authority_id  text not null references public.authorities(id) on delete cascade,
   route_id      text not null,                         -- GTFS route_id
   short_name    text,
@@ -60,29 +65,38 @@ create table if not exists public.routes (
   color         text,                                  -- hex, no leading '#'
   text_color    text,
   geom          extensions.geometry(MultiLineString, 4326),
-  unique (authority_id, route_id)
+  as_of         date,                                  -- load date; v2.0.4 refines to source as_of
+  source_hash   text,                                  -- gold provenance; populated v2.0.4 [H15a]
+  unique (metro_id, authority_id, route_id)
 );
 
 -- ── stops ─────────────────────────────────────────────────────────────
 create table if not exists public.stops (
   id            bigint generated always as identity primary key,
+  metro_id      text not null references public.metros(metro_id),
   authority_id  text not null references public.authorities(id) on delete cascade,
   stop_id       text not null,                         -- GTFS stop_id
   name          text,
   geom          extensions.geometry(Point, 4326),
-  unique (authority_id, stop_id)
+  as_of         date,
+  source_hash   text,
+  unique (metro_id, authority_id, stop_id)
 );
 
 -- ── hex_metrics ───────────────────────────────────────────────────────
 -- Jobs + population aggregated to H3 cells (mapping pillar, v1.1.4). One row per
 -- cell; jobs_per_1k_pop is null where a cell has no residents. Polygon geometry.
 create table if not exists public.hex_metrics (
-  h3              text primary key,                  -- H3 index string; res in `resolution`
+  metro_id        text not null references public.metros(metro_id),
+  h3              text not null,                     -- H3 index string; res in `resolution`
   resolution      integer not null,
   jobs            integer not null,
   population      integer not null,
   jobs_per_1k_pop double precision,
-  geom            extensions.geometry(Polygon, 4326)
+  geom            extensions.geometry(Polygon, 4326),
+  as_of           date,
+  source_hash     text,
+  primary key (metro_id, h3)                         -- h3 globally unique; metro_id leads for prefix reads
 );
 
 -- ── spatial indexes (qualified opclass → search_path-independent) ──────
@@ -114,14 +128,15 @@ create policy "public read hex_metrics" on public.hex_metrics
   for select to anon, authenticated using (true);
 
 -- ── seed: the three Chicagoland GTFS authorities (stable reference data) ─
-insert into public.authorities (id, name, mode, url) values
-  ('cta',   'Chicago Transit Authority', 'multi', 'https://www.transitchicago.com'),
-  ('pace',  'Pace Suburban Bus',         'bus',   'https://www.pacebus.com'),
-  ('metra', 'Metra Commuter Rail',       'rail',  'https://metra.com')
+insert into public.authorities (id, metro_id, name, mode, url) values
+  ('cta',   'chicago', 'Chicago Transit Authority', 'multi', 'https://www.transitchicago.com'),
+  ('pace',  'chicago', 'Pace Suburban Bus',         'bus',   'https://www.pacebus.com'),
+  ('metra', 'chicago', 'Metra Commuter Rail',       'rail',  'https://metra.com')
 on conflict (id) do nothing;
 
 -- ── funding pillar: operating actual (NTD) vs RTA budget/plan [v1.2.4] ──
 create table if not exists public.agency_finances (
+  metro_id         text    not null references public.metros(metro_id),
   authority_id     text    not null,                 -- cta | metra | pace
   fiscal_year      integer not null,
   actual_audited   bigint,                            -- FTA NTD operating expense ($)
@@ -130,7 +145,9 @@ create table if not exists public.agency_finances (
   rta_kind         text,                              -- actual | estimate | budget | plan
   rta_amount       bigint,                            -- RTA adopted operating budget ($)
   farebox_recovery double precision,                  -- fare_revenue / actual_audited
-  primary key (authority_id, fiscal_year)
+  as_of            date,
+  source_hash      text,
+  primary key (metro_id, authority_id, fiscal_year)
 );
 
 alter table public.agency_finances enable row level security;
@@ -141,12 +158,14 @@ create policy "public read agency_finances" on public.agency_finances
 
 -- ── hiring pillar: weekly open-postings snapshots [v1.3.4] ─────────────
 create table if not exists public.vacancy_postings (
+  metro_id       text    not null references public.metros(metro_id),
   authority_id   text    not null,                   -- cta | metra | pace
   as_of          date    not null,
   open_postings  integer not null,
   source_url     text,
   method         text,                               -- taleo | cadient | oracle
-  primary key (authority_id, as_of)
+  source_hash    text,
+  primary key (metro_id, authority_id, as_of)
 );
 
 alter table public.vacancy_postings enable row level security;
@@ -157,9 +176,13 @@ create policy "public read vacancy_postings" on public.vacancy_postings
 
 -- ── access pillar: walkshed job-access score per hex [v1.4.4] ───────────
 create table if not exists public.hex_access (
-  h3                  text primary key,              -- joins to public.hex_metrics
+  metro_id            text not null references public.metros(metro_id),
+  h3                  text not null,                 -- joins to public.hex_metrics (metro_id, h3)
   jobs_reachable_walk bigint not null,
-  walk_radius_m       integer not null
+  walk_radius_m       integer not null,
+  as_of               date,
+  source_hash         text,
+  primary key (metro_id, h3)
 );
 
 alter table public.hex_access enable row level security;
