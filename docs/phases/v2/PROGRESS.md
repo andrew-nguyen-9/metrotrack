@@ -16,7 +16,7 @@ awaiting human) · `done`.
 
 | Segment | What | Status | PR | Notes |
 |---|---|---|---|---|
-| v2.0 | Multi-tenant foundation | in-progress | — | v2.0.4 done (dbt multi-metro, `dbt build` green again, gold@v1 parity); resume v2.0.5 → Astro `[metro]` routing + Chicago migration |
+| v2.0 | Multi-tenant foundation | in-progress | — | v2.0.5 done (`[metro]` routing, Chicago migrated, `/`→`/chicago`); resume v2.0.6 → nightly orchestration + golden-test GATE (closes v2.0). **BLOCKER for v2.0.6:** Vercel SSO Deployment Protection 302s anon/headless requests, so the Lighthouse-on-preview gate can't run — needs a preview-protection bypass or disable |
 | v2.1 | Site shell, pages & SEO | pending | — | needs v2.0 |
 | v2.2 | RSS / regional feeds | pending | — | needs v2.0 |
 | v2.3 | Metro onboarding: **SF** | pending | — | first add-a-metro; needs v2.1 |
@@ -71,6 +71,7 @@ A metro flips to `done` only when **all** pass and evidence is attached to its P
 Append one line per unit. Newest at top. Format:
 `YYYY-MM-DD · <slug or segment> · <status> · <one line> · <PR/branch>`
 
+- 2026-06-28 · v2.0.5 · done · Astro `[metro]/{index,map,funding,hiring,job-access}` via getStaticPaths from generated metros.json; islands take metro prop; data→`src/data/chicago/`; `/`→`/chicago` 301. npm build 5 routes, astro check 0 errors, emitted-HTML parity (funding/hiring/map figures match v1), job-access degrades gracefully. Live-preview Lighthouse blocked by Vercel SSO (verified on byte-identical local artifact) · v2
 - 2026-06-28 · v2.0.4 · done · dbt silver+gold carry metro_id via var('metro'); bronze path+authority regex re-anchored on the metro segment; composite-unique + non-null-metro_id tests. dbt build PASS=65, gold counts identical to a main baseline (24/881/1934/1934/18/3); load.py reads gold.metro_id w/ disagreement guard · v2
 - 2026-06-28 · v2.0.3 · done · pipeline `--metro` + `--dry-run` across 8 modules (cli.py helper), per-metro bronze `data/bronze/chicago/` (git mv, bytes preserved), feeds/FIPS/NTD/ATS from toml not hardcoded; selftest 30/30, chicago dry-run feeds 200 + geo valid, bogus slug exits 1. Interim: dbt build fails until v2.0.4 rewires bronze path+regex · v2
 - 2026-06-28 · v2.0.2 · done · metro_id NOT NULL FK on 7 spine tables, composite tenant keys, as_of/source_hash provenance; applied to Project A, advisors clean, counts unchanged (auth 3/3 chicago, rest 0); load.py --metro; selftest 24/24 · v2
