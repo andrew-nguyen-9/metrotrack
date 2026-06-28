@@ -16,30 +16,25 @@ rows, never duplicates. See docs/phases/v1/v1.3/PLAN.md.
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import io
 import json
 import re
 import sys
 from datetime import date
-from pathlib import Path
 
-import bronze
+try:  # dual-mode: `python -m pipeline.hiring` vs `python pipeline/hiring.py`
+    from . import bronze, cli
+except ImportError:  # pragma: no cover
+    import bronze
+    import cli
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-POSTINGS_CSV = REPO_ROOT / "data" / "bronze" / "hiring" / "postings.csv"
 
-TALEO_URL = "https://chicagotransit.taleo.net/careersection/ex/jobsearch.ftl"
-CADIENT_URL = (
-    "https://cta.cadienttalent.com/index.jsp?seq=postingSearchResults"
-    "&applicationName=MetraKTMDReqExt&locale=en_US"
-    "&event=com.deploy.application.ca.plugin.PostingSearch.doSearch&source=alljobs"
-)
-ORACLE_URL = (
-    "https://iaymqy.fa.ocs.oraclecloud.com/hcmRestApi/resources/latest/"
-    "recruitingCEJobRequisitions?onlyData=true&finder=findReqs;siteNumber=CX_1,limit=200"
-    "&expand=requisitionList"
-)
+def postings_csv(metro):
+    """The per-metro append-safe snapshot log under this metro's bronze."""
+    return cli.bronze_dir(metro.slug, "hiring") / "postings.csv"
+
 
 # Generic link/labels that appear in a Cadient listing but are not a job posting.
 CADIENT_NOISE = {"apply now", "apply", "view all jobs", "search", ""}
@@ -107,10 +102,6 @@ def _fetch_url(url: str, accept: str) -> bytes:
         return r.read()
 
 
-def fetch_oracle() -> bytes:
-    return _fetch_url(ORACLE_URL, "application/json")
-
-
 def _render_text(url: str, wait_selector: str | None = None) -> str:
     """Render a JS page headless and return body innerText (lazy Playwright import)."""
     from playwright.sync_api import sync_playwright  # lazy: keeps selftest no-dep
@@ -142,40 +133,77 @@ def _render_links(url: str, href_pattern: str) -> list[str]:
     return titles
 
 
-def _gather() -> list[dict]:
+def _count_for(method: str, url: str) -> int:
+    """Dispatch one agency's hiring signal by its applicant-tracking-system method."""
+    if method == "taleo":
+        return parse_taleo_count(_render_text(url, "text=Job Openings"))
+    if method == "cadient":
+        return count_cadient_titles(
+            _render_links(url, r"jobDetail|postingDetail|seq=postingView|viewPosting"))
+    if method == "oracle":
+        return parse_oracle_count(_fetch_url(url, "application/json"))
+    raise ValueError(f"unknown hiring method {method!r}")
+
+
+def _agency_hiring(metro):
+    """Yield (agency_id, method, url) for every agency that configures a hiring source."""
+    for a in metro.agencies:
+        h = a.raw.get("hiring") or {}
+        method, url = h.get("method"), h.get("url")
+        if method and url:
+            yield a.id, method, url
+
+
+def _gather(metro) -> list[dict]:
     """Best-effort: a source that fails is skipped this run (logged), not fatal."""
     rows: list[dict] = []
-    try:
-        n = parse_taleo_count(_render_text(TALEO_URL, "text=Job Openings"))
-        rows.append({"authority_id": "cta", "open_postings": n, "source_url": TALEO_URL, "method": "taleo"})
-    except Exception as e:  # noqa: BLE001 — resilience is the point
-        print(f"  skip cta: {e}", file=sys.stderr)
-    try:
-        titles = _render_links(CADIENT_URL, r"jobDetail|postingDetail|seq=postingView|viewPosting")
-        rows.append({"authority_id": "metra", "open_postings": count_cadient_titles(titles),
-                     "source_url": CADIENT_URL, "method": "cadient"})
-    except Exception as e:  # noqa: BLE001
-        print(f"  skip metra: {e}", file=sys.stderr)
-    try:
-        n = parse_oracle_count(fetch_oracle())
-        rows.append({"authority_id": "pace", "open_postings": n, "source_url": ORACLE_URL, "method": "oracle"})
-    except Exception as e:  # noqa: BLE001
-        print(f"  skip pace: {e}", file=sys.stderr)
+    for agency_id, method, url in _agency_hiring(metro):
+        try:
+            n = _count_for(method, url)
+            rows.append({"authority_id": agency_id, "open_postings": n,
+                         "source_url": url, "method": method})
+        except Exception as e:  # noqa: BLE001 — resilience is the point
+            print(f"  skip {agency_id}: {e}", file=sys.stderr)
     return rows
 
 
-def snapshot(today: str | None = None) -> int:
+def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
+    """Validate geo/FIPS and probe each agency's hiring source. [H20a]"""
+    report = cli.DryRunReport(metro.slug, "hiring")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    for agency_id, method, url in _agency_hiring(metro):
+        name = f"hiring:{agency_id} ({method})"
+        report.checks.append(cli.reach(name, url) if check_network
+                             else cli.Check(name, "pass", url))
+    return report
+
+
+def snapshot(metro, today: str | None = None) -> int:
     today = today or date.today().isoformat()
-    rows = _gather()
+    rows = _gather(metro)
     if not rows:
         sys.exit("no sources reachable — nothing to snapshot")
-    existing = POSTINGS_CSV.read_bytes() if POSTINGS_CSV.exists() else b""
-    POSTINGS_CSV.parent.mkdir(parents=True, exist_ok=True)
-    POSTINGS_CSV.write_bytes(append_snapshot(existing, rows, today))
-    receipt = bronze.ingest_csv("hiring", "postings", POSTINGS_CSV.read_bytes())
-    print(f"  ok  hiring/postings.parquet ({receipt.rows} snapshot rows; +{len(rows)} for {today})")
+    csv_path = postings_csv(metro)
+    existing = csv_path.read_bytes() if csv_path.exists() else b""
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+    csv_path.write_bytes(append_snapshot(existing, rows, today))
+    receipt = bronze.ingest_csv("hiring", "postings", csv_path.read_bytes(), metro=metro.slug)
+    print(f"  ok  {metro.slug}/hiring/postings.parquet "
+          f"({receipt.rows} snapshot rows; +{len(rows)} for {today})")
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    ap = cli.add_metro_args(argparse.ArgumentParser(description=__doc__))
+    args = ap.parse_args(argv)
+    metro = cli.resolve_metro(args.metro)
+    if args.dry_run:
+        report = dry_run(metro)
+        print(report.render())
+        return 0 if report.ok else 1
+    return snapshot(metro)
+
+
 if __name__ == "__main__":
-    sys.exit(snapshot())
+    sys.exit(main())

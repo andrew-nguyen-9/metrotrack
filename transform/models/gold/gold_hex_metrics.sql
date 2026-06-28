@@ -3,6 +3,7 @@
 -- hex boundary is rebuilt from the H3 index. jobs_per_1k_pop is a derived
 -- jobs-housing balance signal (null where a cell has no residents).
 select
+    metro_id,
     h3,
     resolution,
     jobs,

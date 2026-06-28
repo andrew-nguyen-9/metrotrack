@@ -27,8 +27,36 @@ env:
   DO_NOT_TRACK: "1"
 
 jobs:
-  refresh:
+  # Read the live metros from the authored config so the matrix is data-driven
+  # (status='live' in metros/*.toml). A "soon" metro is listed but never refreshed. [H11a]
+  discover:
     runs-on: ubuntu-latest
+    outputs:
+      metros: ${{ steps.list.outputs.metros }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - id: list
+        name: List live metros → matrix
+        run: |
+          metros=$(uv run python -c "import json, pipeline.metros as m; print(json.dumps([s for s in m.list_metros() if m.load_metro(s).status == 'live']))")
+          echo "metros=$metros" >> "$GITHUB_OUTPUT"
+          echo "live metros: $metros"
+
+  # One independent refresh per live metro. fail-fast:false so a dark feed in one
+  # metro never sinks the others [H12a]; max-parallel:1 staggers the fleet across the
+  # free Actions minutes [I5a]. Each metro verifies its own data before it publishes.
+  refresh:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        metro: ${{ fromJSON(needs.discover.outputs.metros) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,32 +72,61 @@ jobs:
           sudo make -C /tmp/tippecanoe install
 
       - name: Extract GTFS → bronze (full feeds)
-        run: uv run python pipeline/gtfs.py
+        run: uv run python pipeline/gtfs.py --metro=${{ matrix.metro }}
 
       - name: dbt build (silver + gold + tests)
         working-directory: transform
         env:
           DBT_PROFILES_DIR: .
-        run: uv run --project .. dbt build
-
-      - name: Freshness floor — fail loudly if a feed went dark
-        working-directory: transform
+          METRO: ${{ matrix.metro }}
+        # Block scalar + env var: dbt --vars takes YAML, and "{metro: x}" can't sit
+        # in a plain run: scalar (the colon reads as a mapping).
         run: |
-          uv run --project .. python - <<'PY'
-          import duckdb, sys
-          c = duckdb.connect("metrotrack.duckdb", read_only=True)
-          n = c.execute("select count(distinct authority_id) from gold_routes").fetchone()[0]
-          assert n >= 3, f"only {n} authorities have routes — a GTFS feed went dark"
-          print("freshness ok:", n, "authorities")
-          PY
+          uv run --project .. dbt build --vars "{metro: $METRO}"
+
+      - name: Integrity + freshness gate — fail loud if a figure is untraceable or a feed went dark
+        # verify_metro subsumes the old freshness check: every published figure must
+        # trace to a bronze source row + the operator floor must hold. [H13a, K6a]
+        run: uv run python pipeline/checks.py --metro=${{ matrix.metro }}
 
       - name: Load gold → Supabase Project A
         env:
           SUPABASE_A_DB_URL: ${{ secrets.SUPABASE_A_DB_URL }}
-        run: uv run python pipeline/load.py
+        run: uv run python pipeline/load.py --metro=${{ matrix.metro }}
 
       - name: Rebuild PMTiles + table JSON
-        run: uv run python pipeline/tiles.py
+        run: uv run python pipeline/tiles.py --metro=${{ matrix.metro }}
+
+      - name: Upload this metro's tiles + table JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: metro-${{ matrix.metro }}
+          path: |
+            frontend/public/${{ matrix.metro }}/transit.pmtiles
+            frontend/src/data/${{ matrix.metro }}/transit.json
+          if-no-files-found: error
+
+  # One Astro build over every metro that refreshed, then one production deploy.
+  # `always()` so a partial fleet still ships the metros that did refresh [H12a];
+  # download-artifact pulls each refreshed metro's tiles back into the tree.
+  deploy:
+    needs: refresh
+    if: always() && needs.refresh.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: metro-*
+          path: /tmp/metros
+      - name: Place each metro's artifacts into the tree
+        run: |
+          for d in /tmp/metros/metro-*; do
+            slug=$(basename "$d" | sed 's/^metro-//')
+            mkdir -p "frontend/public/$slug" "frontend/src/data/$slug"
+            cp "$d/transit.pmtiles" "frontend/public/$slug/" 2>/dev/null || true
+            cp "$d/transit.json" "frontend/src/data/$slug/" 2>/dev/null || true
+          done
 
       - name: Build frontend
         working-directory: frontend
@@ -88,7 +145,7 @@ jobs:
         run: npx vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN"
 
   notify-failure:
-    needs: refresh
+    needs: [discover, refresh, deploy]
     if: failure()
     runs-on: ubuntu-latest
     permissions: {} # no GITHUB_TOKEN scopes — a compromised mail action gets nothing

@@ -1,15 +1,31 @@
 ---
 import "../styles/globals.css";
+import { type Metro, defaultMetro } from "../lib/metros";
 
 interface Props {
   title?: string;
   description?: string;
+  metro?: Metro;
 }
 
-const {
-  title = "MetroTrack — Chicagoland Transit Tracker",
-  description = "A neutral, public accountability tracker for Chicagoland transit: funding, a usage map against population and jobs, hiring, and a job-access score.",
-} = Astro.props;
+// Every page lives under a metro now; fall back to the default for safety.
+const { metro = defaultMetro(), title, description } = Astro.props;
+
+const resolvedTitle = title ?? `MetroTrack — ${metro.region} Transit Tracker`;
+const resolvedDescription =
+  description ??
+  `A neutral, public accountability tracker for ${metro.region} transit: funding, a usage map against population and jobs, hiring, and a job-access score.`;
+
+const base = `/${metro.slug}`;
+// Nav is built from the active metro so islands + links stay generic per metro [B7a].
+const nav = [
+  { href: base, label: "Overview" },
+  { href: `${base}/map`, label: "Map" },
+  { href: `${base}/funding`, label: "Funding" },
+  { href: `${base}/hiring`, label: "Hiring" },
+  { href: `${base}/job-access`, label: "Job access" },
+];
+const here = Astro.url.pathname.replace(/\/$/, "");
 
 const ogImage = new URL("/og.png", Astro.site).href;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -20,28 +36,37 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <title>{resolvedTitle}</title>
+    <meta name="description" content={resolvedDescription} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
     <meta property="og:type" content="website" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={resolvedTitle} />
+    <meta property="og:description" content={resolvedDescription} />
     <meta property="og:image" content={ogImage} />
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body class="min-h-dvh flex flex-col">
     <header class="border-b border-hairline">
-      <div class="mx-auto max-w-6xl px-4 py-4 flex items-center gap-6">
-        <a href="/" aria-label="MetroTrack home">
-          <img src="/logo-wide.svg" alt="MetroTrack Chicago" height="28" class="h-7 w-auto" />
+      <div class="mx-auto max-w-6xl px-4 py-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <a href={base} class="shrink-0" aria-label={`MetroTrack ${metro.name} home`}>
+          <img src="/logo-wide.svg" alt={`MetroTrack ${metro.name}`} height="28" class="h-7 w-auto" />
         </a>
-        <nav aria-label="Primary" class="flex gap-4 text-sm">
-          <a href="/" class="text-text-muted hover:text-text">Map</a>
-          <a href="/funding" class="text-text-muted hover:text-text">Funding</a>
-          <a href="/hiring" class="text-text-muted hover:text-text">Hiring</a>
+        <nav aria-label="Primary" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          {nav.map((item) => {
+            const active = here === item.href.replace(/\/$/, "");
+            return (
+              <a
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                class={active ? "text-text" : "text-text-muted hover:text-text"}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
       </div>
     </header>

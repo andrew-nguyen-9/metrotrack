@@ -14,7 +14,7 @@ import {
 
 echarts.use([BarChart, GridComponent, TooltipComponent, LegendComponent, AriaComponent, CanvasRenderer]);
 
-type Props = { rows: FundingRow[]; authorities: string[] };
+type Props = { rows: FundingRow[]; authorities: string[]; metro?: string };
 
 // Series colors are a DATA ENCODING (actual vs RTA), not decoration — and color is
 // never the only signal: bars are positionally paired, the legend names each series,
@@ -73,7 +73,7 @@ function buildOption(rows: FundingRow[], authority: string, theme: { text: strin
   };
 }
 
-export default function FundingChart({ rows, authorities }: Props) {
+export default function FundingChart({ rows, authorities, metro }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [authority, setAuthority] = useState(authorities[0] ?? "cta");
@@ -140,7 +140,7 @@ export default function FundingChart({ rows, authorities }: Props) {
       <div
         ref={ref}
         role="img"
-        aria-label={`Operating budget versus audited actual expense for ${authorityLabel(authority)} by fiscal year. Exact figures are in the table below.`}
+        aria-label={`Operating budget versus audited actual expense for ${authorityLabel(authority)}${metro ? ` (${metro})` : ""} by fiscal year. Exact figures are in the table below.`}
         className="h-[48vh] min-h-72 w-full"
       />
     </div>

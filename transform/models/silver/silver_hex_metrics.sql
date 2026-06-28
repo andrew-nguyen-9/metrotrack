@@ -11,12 +11,12 @@ with cenpop as (
         try_cast(population as integer) as population,
         try_cast(lat as double) as lat,
         try_cast(lon as double) as lon
-    from read_parquet('{{ var("bronze_dir") }}/census/cenpop_bg.parquet')
+    from read_parquet('{{ var("bronze_dir") }}/{{ var("metro") }}/census/cenpop_bg.parquet')
     where lat is not null and lon is not null
 ),
 jobs as (
     select bg_geoid, sum(try_cast(jobs as integer)) as jobs
-    from read_parquet('{{ var("bronze_dir") }}/census/lodes_wac.parquet')
+    from read_parquet('{{ var("bronze_dir") }}/{{ var("metro") }}/census/lodes_wac.parquet')
     group by bg_geoid
 ),
 bg as (
@@ -33,6 +33,7 @@ agg as (
     group by h3
 )
 select
+    '{{ var("metro") }}' as metro_id,
     h3_h3_to_string(h3) as h3,
     {{ var("h3_res") }} as resolution,
     jobs,

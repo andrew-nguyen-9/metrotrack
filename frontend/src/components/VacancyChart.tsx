@@ -13,7 +13,7 @@ import {
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, AriaComponent, CanvasRenderer]);
 
-type Props = { rows: VacancyRow[]; authorities: string[] };
+type Props = { rows: VacancyRow[]; authorities: string[]; metro?: string };
 
 // Per-authority line color (data encoding) — paired with a distinct marker SYMBOL so
 // color is never the only signal (legend + symbols + table). (ponytail: literals like
@@ -66,7 +66,7 @@ function buildOption(rows: VacancyRow[], authorities: string[], theme: { text: s
   };
 }
 
-export default function VacancyChart({ rows, authorities }: Props) {
+export default function VacancyChart({ rows, authorities, metro }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [error, setError] = useState(false);
@@ -112,7 +112,7 @@ export default function VacancyChart({ rows, authorities }: Props) {
     <div
       ref={ref}
       role="img"
-      aria-label="Open job postings per service board over time. Exact counts are in the table below."
+      aria-label={`Open job postings per service board over time${metro ? ` (${metro})` : ""}. Exact counts are in the table below.`}
       className="h-[48vh] min-h-72 w-full"
     />
   );

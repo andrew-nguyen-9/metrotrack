@@ -6,6 +6,7 @@
 -- definition gap with real budget variance. The UI compares the two series honestly
 -- instead (docs/phases/v1/v1.2/PLAN.md).
 select
+    metro_id,
     authority_id,
     fiscal_year,
     actual_audited,

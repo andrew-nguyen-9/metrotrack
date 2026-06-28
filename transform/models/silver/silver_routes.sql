@@ -3,12 +3,12 @@
 -- MULTILINESTRING via the trips route_id↔shape_id link. SRID 4326 (GTFS is WGS84).
 with shape_pts as (
     select
-        regexp_extract(filename, 'bronze/([^/]+)/', 1) as authority_id,
+        regexp_extract(filename, '/{{ var("metro") }}/([^/]+)/', 1) as authority_id,
         shape_id,
         st_point(try_cast(shape_pt_lon as double), try_cast(shape_pt_lat as double)) as pt,
         try_cast(shape_pt_sequence as integer) as seq
     from read_parquet(
-        '{{ var("bronze_dir") }}/*/shapes.parquet',
+        '{{ var("bronze_dir") }}/{{ var("metro") }}/*/shapes.parquet',
         filename = true,
         union_by_name = true
     )
@@ -28,11 +28,11 @@ shape_lines as (
 
 route_shapes as (
     select distinct
-        regexp_extract(filename, 'bronze/([^/]+)/', 1) as authority_id,
+        regexp_extract(filename, '/{{ var("metro") }}/([^/]+)/', 1) as authority_id,
         route_id,
         shape_id
     from read_parquet(
-        '{{ var("bronze_dir") }}/*/trips.parquet',
+        '{{ var("bronze_dir") }}/{{ var("metro") }}/*/trips.parquet',
         filename = true,
         union_by_name = true
     )
@@ -41,7 +41,7 @@ route_shapes as (
 
 routes_base as (
     select
-        regexp_extract(filename, 'bronze/([^/]+)/', 1) as authority_id,
+        regexp_extract(filename, '/{{ var("metro") }}/([^/]+)/', 1) as authority_id,
         route_id,
         nullif(route_short_name, '') as short_name,
         nullif(route_long_name, '') as long_name,
@@ -49,13 +49,14 @@ routes_base as (
         nullif(route_color, '') as color,
         nullif(route_text_color, '') as text_color
     from read_parquet(
-        '{{ var("bronze_dir") }}/*/routes.parquet',
+        '{{ var("bronze_dir") }}/{{ var("metro") }}/*/routes.parquet',
         filename = true,
         union_by_name = true
     )
 )
 
 select
+    '{{ var("metro") }}' as metro_id,
     rb.authority_id,
     rb.route_id,
     rb.short_name,

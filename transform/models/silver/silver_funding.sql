@@ -15,7 +15,7 @@ with ntd as (
         cast(operating_expense as bigint) as actual_audited,
         cast(fare_revenue as bigint) as fare_revenue,
         cast(unlinked_trips as bigint) as unlinked_trips
-    from read_parquet('{{ var("bronze_dir") }}/ntd/operating.parquet')
+    from read_parquet('{{ var("bronze_dir") }}/{{ var("metro") }}/ntd/operating.parquet')
 ),
 rta as (
     select
@@ -23,9 +23,10 @@ rta as (
         cast(fiscal_year as integer) as fiscal_year,
         kind as rta_kind,
         cast(amount as bigint) as rta_amount
-    from read_parquet('{{ var("bronze_dir") }}/rta/budget.parquet')
+    from read_parquet('{{ var("bronze_dir") }}/{{ var("metro") }}/rta/budget.parquet')
 )
 select
+    '{{ var("metro") }}' as metro_id,
     authority_id,
     fiscal_year,
     n.actual_audited,
