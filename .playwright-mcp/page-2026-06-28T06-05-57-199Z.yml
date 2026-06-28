@@ -1,0 +1,167 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "MetroTrack Chicago home" [ref=e4] [cursor=pointer]:
+        - /url: /chicago
+        - img "MetroTrack Chicago" [ref=e5]
+      - navigation "Primary" [ref=e6]:
+        - link "Overview" [ref=e7] [cursor=pointer]:
+          - /url: /chicago
+        - link "Map" [ref=e8] [cursor=pointer]:
+          - /url: /chicago/map
+        - link "Funding" [ref=e9] [cursor=pointer]:
+          - /url: /chicago/funding
+        - link "Hiring" [ref=e10] [cursor=pointer]:
+          - /url: /chicago/hiring
+        - link "Job access" [ref=e11] [cursor=pointer]:
+          - /url: /chicago/job-access
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - heading "Where the money goes" [level=1] [ref=e14]
+      - paragraph [ref=e15]: Operating spending for the three service boards — audited actuals against the RTA's adopted budget and forward plan. Every figure shows its source and as-of date.
+    - region "Operating budget vs. actual, by service board" [ref=e16]:
+      - heading "Operating budget vs. actual, by service board" [level=2] [ref=e17]
+      - paragraph [ref=e18]:
+        - strong [ref=e19]: Actual
+        - text: = audited operating expense (FTA National Transit Database).
+        - strong [ref=e20]: RTA budget / plan
+        - text: = the RTA's adopted figure for each year, labeled by its true nature (actual, estimate, adopted budget, or forward plan). The two series come from different sources defined slightly differently, so they are shown side by side, never merged — for CTA and Metra they track within ~2%; Pace's gap is larger because its figure folds in Regional ADA Paratransit. The 2026–2027 plan years show the projected
+        - link "fiscal-cliff" [ref=e21] [cursor=pointer]:
+          - /url: https://www.rtachicago.org/uploads/files/general/Transit-Funding/2025Budget/2025_RegionalBudgetAdopted.pdf
+        - text: trajectory.
+      - generic [ref=e24]:
+        - group "Service board" [ref=e25]:
+          - generic [ref=e26]: Service board
+          - generic [ref=e27]:
+            - generic [ref=e28] [cursor=pointer]:
+              - radio "CTA" [checked] [ref=e29]
+              - generic [ref=e30]: CTA
+            - generic [ref=e31] [cursor=pointer]:
+              - radio "Metra" [ref=e32]
+              - generic [ref=e33]: Metra
+            - generic [ref=e34] [cursor=pointer]:
+              - radio "Pace" [ref=e35]
+              - generic [ref=e36]: Pace
+        - img "Operating budget versus audited actual expense for CTA (Chicago) by fiscal year. Exact figures are in the table below." [ref=e37]
+      - paragraph [ref=e38]:
+        - text: "Sources:"
+        - link "Audited operating expense — FTA National Transit Database" [ref=e39] [cursor=pointer]:
+          - /url: https://data.transportation.gov/Public-Transit/NTD-Annual-Data-View-Metrics-by-Agency-/g27i-aq2u
+        - text: (FY2024 (latest published)) ·
+        - link "RTA Adopted 2025 Operating Budget, Table 2 (in thousands)" [ref=e40] [cursor=pointer]:
+          - /url: https://www.rtachicago.org/uploads/files/general/Transit-Funding/2025Budget/2025_RegionalBudgetAdopted.pdf
+        - text: (Adopted Dec 2024; accessed 2026-06-27).
+      - group [ref=e41]:
+        - generic "Budget & actual data (table)" [ref=e42] [cursor=pointer]
+        - table "Audited actual operating expense and RTA budget/plan figures by service board and fiscal year" [ref=e44]:
+          - caption [ref=e45]: Audited actual operating expense and RTA budget/plan figures by service board and fiscal year
+          - rowgroup [ref=e46]:
+            - row "Fiscal year Actual operating expense (audited) RTA budget / plan Farebox recovery" [ref=e47]:
+              - columnheader "Fiscal year" [ref=e48]
+              - columnheader "Actual operating expense (audited)" [ref=e49]
+              - columnheader "RTA budget / plan" [ref=e50]
+              - columnheader "Farebox recovery" [ref=e51]
+          - rowgroup [ref=e52]:
+            - row "CTA" [ref=e53]:
+              - rowheader "CTA" [ref=e54]
+            - row "2022 $1.40B — 21.0%" [ref=e55]:
+              - cell "2022" [ref=e56]
+              - cell "$1.40B" [ref=e57]
+              - cell "—" [ref=e58]
+              - cell "21.0%" [ref=e59]
+            - row "2023 $1.70B $1.71B(actual) 19.6%" [ref=e60]:
+              - cell "2023" [ref=e61]
+              - cell "$1.70B" [ref=e62]
+              - cell "$1.71B(actual)" [ref=e63]
+              - cell "19.6%" [ref=e64]
+            - row "2024 $1.92B $1.92B(estimate) 18.5%" [ref=e65]:
+              - cell "2024" [ref=e66]
+              - cell "$1.92B" [ref=e67]
+              - cell "$1.92B(estimate)" [ref=e68]
+              - cell "18.5%" [ref=e69]
+            - row "2025 — $2.16B(adopted budget) —" [ref=e70]:
+              - cell "2025" [ref=e71]
+              - cell "—" [ref=e72]
+              - cell "$2.16B(adopted budget)" [ref=e73]
+              - cell "—" [ref=e74]
+            - row "2026 — $2.23B(plan) —" [ref=e75]:
+              - cell "2026" [ref=e76]
+              - cell "—" [ref=e77]
+              - cell "$2.23B(plan)" [ref=e78]
+              - cell "—" [ref=e79]
+            - row "2027 — $2.31B(plan) —" [ref=e80]:
+              - cell "2027" [ref=e81]
+              - cell "—" [ref=e82]
+              - cell "$2.31B(plan)" [ref=e83]
+              - cell "—" [ref=e84]
+            - row "Metra" [ref=e85]:
+              - rowheader "Metra" [ref=e86]
+            - row "2022 $823M — 15.4%" [ref=e87]:
+              - cell "2022" [ref=e88]
+              - cell "$823M" [ref=e89]
+              - cell "—" [ref=e90]
+              - cell "15.4%" [ref=e91]
+            - row "2023 $897M $912M(actual) 16.6%" [ref=e92]:
+              - cell "2023" [ref=e93]
+              - cell "$897M" [ref=e94]
+              - cell "$912M(actual)" [ref=e95]
+              - cell "16.6%" [ref=e96]
+            - row "2024 $989M $1.00B(estimate) 16.6%" [ref=e97]:
+              - cell "2024" [ref=e98]
+              - cell "$989M" [ref=e99]
+              - cell "$1.00B(estimate)" [ref=e100]
+              - cell "16.6%" [ref=e101]
+            - row "2025 — $1.14B(adopted budget) —" [ref=e102]:
+              - cell "2025" [ref=e103]
+              - cell "—" [ref=e104]
+              - cell "$1.14B(adopted budget)" [ref=e105]
+              - cell "—" [ref=e106]
+            - row "2026 — $1.17B(plan) —" [ref=e107]:
+              - cell "2026" [ref=e108]
+              - cell "—" [ref=e109]
+              - cell "$1.17B(plan)" [ref=e110]
+              - cell "—" [ref=e111]
+            - row "2027 — $1.15B(plan) —" [ref=e112]:
+              - cell "2027" [ref=e113]
+              - cell "—" [ref=e114]
+              - cell "$1.15B(plan)" [ref=e115]
+              - cell "—" [ref=e116]
+            - row "Pace" [ref=e117]:
+              - rowheader "Pace" [ref=e118]
+            - row "2022 $418M — 6.4%" [ref=e119]:
+              - cell "2022" [ref=e120]
+              - cell "$418M" [ref=e121]
+              - cell "—" [ref=e122]
+              - cell "6.4%" [ref=e123]
+            - row "2023 $467M $505M(actual) 6.2%" [ref=e124]:
+              - cell "2023" [ref=e125]
+              - cell "$467M" [ref=e126]
+              - cell "$505M(actual)" [ref=e127]
+              - cell "6.2%" [ref=e128]
+            - row "2024 $487M $561M(estimate) 6.2%" [ref=e129]:
+              - cell "2024" [ref=e130]
+              - cell "$487M" [ref=e131]
+              - cell "$561M(estimate)" [ref=e132]
+              - cell "6.2%" [ref=e133]
+            - row "2025 — $621M(adopted budget) —" [ref=e134]:
+              - cell "2025" [ref=e135]
+              - cell "—" [ref=e136]
+              - cell "$621M(adopted budget)" [ref=e137]
+              - cell "—" [ref=e138]
+            - row "2026 — $745M(plan) —" [ref=e139]:
+              - cell "2026" [ref=e140]
+              - cell "—" [ref=e141]
+              - cell "$745M(plan)" [ref=e142]
+              - cell "—" [ref=e143]
+            - row "2027 — $782M(plan) —" [ref=e144]:
+              - cell "2027" [ref=e145]
+              - cell "—" [ref=e146]
+              - cell "$782M(plan)" [ref=e147]
+              - cell "—" [ref=e148]
+        - paragraph [ref=e149]: Pace includes Regional ADA Paratransit, which Pace operates. Farebox recovery = fare revenue ÷ audited operating expense (FTA NTD).
+  - contentinfo [ref=e150]:
+    - paragraph [ref=e152]:
+      - text: MetroTrack — independent, non-affiliated. Data from CTA, Pace, Metra (GTFS), the Chicago Data Portal, and the U.S. Census. Map data ©
+      - link "OpenStreetMap" [ref=e153] [cursor=pointer]:
+        - /url: https://www.openstreetmap.org/copyright
+      - text: contributors.

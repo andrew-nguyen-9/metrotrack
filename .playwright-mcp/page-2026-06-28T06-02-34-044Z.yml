@@ -1,0 +1,34 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "MetroTrack Chicago home" [ref=e4] [cursor=pointer]:
+        - /url: /chicago
+        - img "MetroTrack Chicago" [ref=e5]
+      - navigation "Primary" [ref=e6]:
+        - link "Overview" [ref=e7] [cursor=pointer]:
+          - /url: /chicago
+        - link "Map" [ref=e8] [cursor=pointer]:
+          - /url: /chicago/map
+        - link "Funding" [ref=e9] [cursor=pointer]:
+          - /url: /chicago/funding
+        - link "Hiring" [ref=e10] [cursor=pointer]:
+          - /url: /chicago/hiring
+        - link "Job access" [ref=e11] [cursor=pointer]:
+          - /url: /chicago/job-access
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - heading "Job access" [level=1] [ref=e14]
+      - paragraph [ref=e15]: "The signature score: how many jobs a typical resident can reach by transit and a short walk — the clearest measure of whether the network actually connects people to work."
+    - generic [ref=e17]:
+      - heading "Job-access score arrives with the access pillar" [level=2] [ref=e18]
+      - paragraph [ref=e19]:
+        - text: We don't have a published job-access export for Chicago yet, so there is nothing to show here — and we won't invent a number. The score is computed from Census LODES jobs and openrouteservice walk isochrones (see ADR-003); it lands once the access pillar is wired through to the frontend. Until then, the
+        - link "map's job-access overlay" [ref=e20] [cursor=pointer]:
+          - /url: /chicago/map
+        - text: shows the underlying ½-mi-walk reach per H3 hex cell.
+  - contentinfo [ref=e21]:
+    - paragraph [ref=e23]:
+      - text: MetroTrack — independent, non-affiliated. Data from CTA, Pace, Metra (GTFS), the Chicago Data Portal, and the U.S. Census. Map data ©
+      - link "OpenStreetMap" [ref=e24] [cursor=pointer]:
+        - /url: https://www.openstreetmap.org/copyright
+      - text: contributors.
