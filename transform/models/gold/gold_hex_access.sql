@@ -10,15 +10,18 @@
 -- spatial index / H3 k-ring prefilter if this scales to the full region.
 with h as (
     select
+        metro_id,
         h3,
         jobs,
         ST_Centroid(ST_GeomFromText(geom_wkt)) as c
     from {{ ref('gold_hex_metrics') }}
 )
 select
+    a.metro_id,
     a.h3,
     cast(sum(b.jobs) as bigint) as jobs_reachable_walk,
     {{ var('walk_radius_m') }} as walk_radius_m
 from h as a
-join h as b on ST_Distance_Sphere(a.c, b.c) <= {{ var('walk_radius_m') }}
-group by a.h3
+join h as b on a.metro_id = b.metro_id
+    and ST_Distance_Sphere(a.c, b.c) <= {{ var('walk_radius_m') }}
+group by a.metro_id, a.h3

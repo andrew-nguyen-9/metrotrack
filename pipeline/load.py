@@ -186,40 +186,50 @@ def main() -> int:
     if not DUCKDB.exists():
         sys.exit(f"missing {DUCKDB} — run `cd transform && dbt build` first")
 
+    # metro_id is carried by the gold tables themselves (v2.0.4, = dbt var 'metro'),
+    # so gold is the single source of truth for which metro a row belongs to — it is
+    # selected first and flows straight into the (metro_id, …) upsert key. The --metro
+    # arg still drives sync_metros + logging; assert they agree to catch a stale build.
     con = duckdb.connect(str(DUCKDB), read_only=True)
     routes = con.execute(
-        "select authority_id, route_id, short_name, long_name, route_type, "
+        "select metro_id, authority_id, route_id, short_name, long_name, route_type, "
         "color, text_color, geom_wkt from gold_routes"
     ).fetchall()
     stops = con.execute(
-        "select authority_id, stop_id, name, geom_wkt from gold_stops"
+        "select metro_id, authority_id, stop_id, name, geom_wkt from gold_stops"
     ).fetchall()
     hexes = con.execute(
-        "select h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
+        "select metro_id, h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
         "from gold_hex_metrics"
     ).fetchall()
     finances = con.execute(
-        "select authority_id, fiscal_year, actual_audited, fare_revenue, "
+        "select metro_id, authority_id, fiscal_year, actual_audited, fare_revenue, "
         "unlinked_trips, rta_kind, rta_amount, farebox_recovery from gold_funding"
     ).fetchall()
     vacancy = con.execute(
-        "select authority_id, as_of, open_postings, source_url, method from gold_vacancy"
+        "select metro_id, authority_id, as_of, open_postings, source_url, method "
+        "from gold_vacancy"
     ).fetchall()
     access = con.execute(
-        "select h3, jobs_reachable_walk, walk_radius_m from gold_hex_access"
+        "select metro_id, h3, jobs_reachable_walk, walk_radius_m from gold_hex_access"
     ).fetchall()
     con.close()
 
-    # Tag every row with metro_id (front) + as_of=today (back). vacancy already
-    # carries its own as_of in the natural key, so it gets metro_id only.
+    built = {r[0] for r in routes + stops + hexes + finances + vacancy + access}
+    if built and built != {metro}:
+        sys.exit(f"gold metro_id {sorted(built)} != --metro={metro} — rebuild dbt "
+                 f"with --vars '{{metro: {metro}}}' before loading")
+
+    # gold rows already lead with metro_id; append as_of=today (the load date) at the
+    # back. vacancy carries its own as_of in the natural key, so it gets metro_id only.
     with psycopg.connect(db_url) as pg:
         with pg.cursor() as cur:
-            cur.executemany(ROUTE_UPSERT,   [(metro, *r, today) for r in routes])
-            cur.executemany(STOP_UPSERT,    [(metro, *r, today) for r in stops])
-            cur.executemany(HEX_UPSERT,     [(metro, *r, today) for r in hexes])
-            cur.executemany(FINANCE_UPSERT, [(metro, *r, today) for r in finances])
-            cur.executemany(VACANCY_UPSERT, [(metro, *r) for r in vacancy])
-            cur.executemany(ACCESS_UPSERT,  [(metro, *r, today) for r in access])
+            cur.executemany(ROUTE_UPSERT,   [(*r, today) for r in routes])
+            cur.executemany(STOP_UPSERT,    [(*r, today) for r in stops])
+            cur.executemany(HEX_UPSERT,     [(*r, today) for r in hexes])
+            cur.executemany(FINANCE_UPSERT, [(*r, today) for r in finances])
+            cur.executemany(VACANCY_UPSERT, list(vacancy))
+            cur.executemany(ACCESS_UPSERT,  [(*r, today) for r in access])
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "

@@ -1,6 +1,7 @@
 -- Gold routes: serving shape for the Supabase spine (public.routes).
 -- Geometry as WKT so the loader inserts via ST_GeomFromText(.., 4326).
 select
+    metro_id,
     authority_id,
     route_id,
     short_name,

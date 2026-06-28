@@ -1,9 +1,15 @@
 version: 2
 
+# metro_id is the tenant key (= var 'metro'); it is NOT NULL on every model and
+# forms the left side of every composite natural key. Composite uniqueness lives in
+# the singular tests under tests/ (a column-level `unique` can't span two columns
+# without dbt_utils, which this project deliberately doesn't vendor).
 models:
   - name: silver_stops
-    description: Typed, deduped, validated GTFS stops — one point per authority + stop_id (SRID 4326).
+    description: Typed, deduped, validated GTFS stops — one point per (metro, authority, stop_id) (SRID 4326).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: stop_id
@@ -11,29 +17,37 @@ models:
   - name: silver_routes
     description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: route_id
         tests: [not_null]
   - name: silver_hex_metrics
-    description: Jobs + population aggregated to H3 cells over Cook County (res = h3_res var).
+    description: Jobs + population aggregated to H3 cells (res = h3_res var). One row per (metro, hex).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: h3
-        tests: [not_null, unique]   # one row per hex cell (cell uniqueness)
+        tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_silver_hex_unique.sql
       - name: jobs
         tests: [not_null]
       - name: population
         tests: [not_null]
   - name: silver_funding
-    description: Operating expense per service board × fiscal year — NTD audited actuals joined to the RTA adopted budget/plan (one row per authority+year).
+    description: Operating expense per service board × fiscal year — NTD audited actuals joined to the RTA adopted budget/plan (one row per metro+authority+year).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: fiscal_year
         tests: [not_null]
   - name: silver_vacancy
-    description: Weekly open-postings snapshots per service board (one row per authority × date).
+    description: Weekly open-postings snapshots per service board (one row per metro × authority × date).
     columns:
+      - name: metro_id
+        tests: [not_null]
       - name: authority_id
         tests: [not_null]
       - name: as_of
