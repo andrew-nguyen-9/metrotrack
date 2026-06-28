@@ -1,16 +1,19 @@
 ---
-import Base from "../layouts/Base.astro";
-import VacancyChart from "../components/VacancyChart.tsx";
-import hiringData from "../data/hiring.json";
+import Base from "../../layouts/Base.astro";
+import VacancyChart from "../../components/VacancyChart.tsx";
+import { type Metro, metroPaths, hiringData } from "../../lib/metros";
 import {
   authorityLabel, authorities, rowsFor, type HiringData,
-} from "../lib/hiring";
+} from "../../lib/hiring";
 
-const data = hiringData as unknown as HiringData;
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = hiringData(metro.slug) as HiringData;
 const auths = authorities(data.rows);
 ---
 
-<Base title="Hiring — MetroTrack">
+<Base metro={metro} title={`Hiring — MetroTrack ${metro.name}`}>
   <section class="max-w-2xl">
     <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
       Who's hiring, tracked weekly
@@ -33,7 +36,7 @@ const auths = authorities(data.rows);
     </p>
 
     <div class="mt-4 rounded-lg border border-hairline bg-surface p-4">
-      <VacancyChart client:visible rows={data.rows} authorities={auths} />
+      <VacancyChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
     </div>
 
     <p class="mt-2 text-xs text-text-muted">

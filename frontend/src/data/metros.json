@@ -1,0 +1,15 @@
+[
+  {
+    "slug": "chicago",
+    "name": "Chicago",
+    "region": "Chicagoland",
+    "tz": "America/Chicago",
+    "status": "live",
+    "bbox": [
+      -88.6175,
+      41.4183333,
+      -87.5477778,
+      42.5858333
+    ]
+  }
+]

@@ -1,19 +1,15 @@
 ---
-import Base from "../layouts/Base.astro";
-import TransitMap from "../components/TransitMap.tsx";
-import transit from "../data/transit.json";
-import { authorityLabel, type TransitData, type HexCell } from "../lib/transit";
+import Base from "../../layouts/Base.astro";
+import TransitMap from "../../components/TransitMap.tsx";
+import { type Metro, metroPaths, transitData, pmtilesUrl } from "../../lib/metros";
+import { authorityLabel, type TransitData, type HexCell } from "../../lib/transit";
 
-// Three pillars (docs/overview/VISION.md). Numbers are intentionally absent until
-// the pipelines that source them land — honest by construction.
-const pillars = [
-  { name: "Funding", body: "NITA / CTA / Pace / Metra budgets vs. actuals — where the money goes." },
-  { name: "Mapping", body: "Bus & rail usage against population, jobs, and destinations." },
-  { name: "Hiring", body: "Open reqs and understaffing tracked weekly into a vacancy trend." },
-];
+export const getStaticPaths = metroPaths;
 
-const data = transit as unknown as TransitData;
-const bbox = data.bbox;
+const { metro } = Astro.props as { metro: Metro };
+const data = transitData(metro.slug) as TransitData;
+// Default map viewport comes from the metro bbox (metros.json), not the data file [B12a].
+const bbox = metro.bbox;
 
 // Routes grouped by authority for the table fallback.
 const groups = new Map<string, TransitData["routes"]>();
@@ -33,30 +29,12 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
 ];
 ---
 
-<Base>
-  <section class="max-w-2xl">
-    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
-      Chicagoland transit, measured.
+<Base metro={metro} title={`Map — MetroTrack ${metro.name}`}>
+  <section aria-labelledby="map-heading">
+    <h1 id="map-heading" class="text-3xl sm:text-4xl font-semibold tracking-tight">
+      Routes, stops &amp; the people they serve
     </h1>
-    <p class="mt-4 text-text-muted text-lg">
-      A neutral, public accountability tracker — funding, usage, hiring, and a
-      job-access score — built on open data. Every figure shows its source
-      and&nbsp;<span class="tabular">as-of</span> date.
-    </p>
-  </section>
-
-  <ul class="mt-10 grid gap-4 sm:grid-cols-3">
-    {pillars.map((p) => (
-      <li class="rounded-lg border border-hairline bg-surface p-5">
-        <h2 class="font-medium">{p.name}</h2>
-        <p class="mt-2 text-sm text-text-muted">{p.body}</p>
-      </li>
-    ))}
-  </ul>
-
-  <section class="mt-12" aria-labelledby="map-heading">
-    <h2 id="map-heading" class="text-xl font-medium">Routes, stops &amp; the people they serve</h2>
-    <p class="mt-1 text-sm text-text-muted">
+    <p class="mt-4 max-w-3xl text-sm text-text-muted">
       CTA, Pace, and Metra routes and stops, served as vector tiles, over an
       optional hex overlay of <span class="tabular">jobs</span> (Census LODES),&nbsp;<span
       class="tabular">population</span> (Census 2020), and a&nbsp;<span
@@ -66,7 +44,7 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
 
     <div class="mt-4 overflow-hidden rounded-lg border border-hairline bg-surface">
       <div class="h-[60vh] min-h-80 w-full">
-        <TransitMap client:only="react" pmtilesUrl="/transit.pmtiles" bbox={bbox} hex={data.hex} />
+        <TransitMap client:only="react" pmtilesUrl={pmtilesUrl(metro.slug)} bbox={bbox} hex={data.hex} metro={metro.name} />
       </div>
       <ul class="flex flex-wrap gap-4 border-t border-hairline px-4 py-2 text-sm text-text-muted">
         <li class="flex items-center gap-2" aria-hidden="true">

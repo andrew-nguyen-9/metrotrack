@@ -4,10 +4,16 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
+    "dev": "npm run gen:metros && astro dev",
+    "prebuild": "npm run gen:metros",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "npm run gen:metros && astro check",
+    "gen:metros": "node scripts/gen-metros.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "smol-toml": "^1.4.2"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.9",
