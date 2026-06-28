@@ -130,3 +130,16 @@ alter table public.vacancy_postings enable row level security;
 drop policy if exists "public read vacancy_postings" on public.vacancy_postings;
 create policy "public read vacancy_postings" on public.vacancy_postings
   for select to anon, authenticated using (true);
+
+-- ── access pillar: walkshed job-access score per hex [v1.4.4] ───────────
+create table if not exists public.hex_access (
+  h3                  text primary key,              -- joins to public.hex_metrics
+  jobs_reachable_walk bigint not null,
+  walk_radius_m       integer not null
+);
+
+alter table public.hex_access enable row level security;
+
+drop policy if exists "public read hex_access" on public.hex_access;
+create policy "public read hex_access" on public.hex_access
+  for select to anon, authenticated using (true);

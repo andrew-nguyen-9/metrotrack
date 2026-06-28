@@ -79,6 +79,14 @@ on conflict (authority_id, as_of) do update set
   method        = excluded.method
 """
 
+ACCESS_UPSERT = """
+insert into public.hex_access (h3, jobs_reachable_walk, walk_radius_m)
+values (%s, %s, %s)
+on conflict (h3) do update set
+  jobs_reachable_walk = excluded.jobs_reachable_walk,
+  walk_radius_m       = excluded.walk_radius_m
+"""
+
 
 def main() -> int:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
@@ -106,6 +114,9 @@ def main() -> int:
     vacancy = con.execute(
         "select authority_id, as_of, open_postings, source_url, method from gold_vacancy"
     ).fetchall()
+    access = con.execute(
+        "select h3, jobs_reachable_walk, walk_radius_m from gold_hex_access"
+    ).fetchall()
     con.close()
 
     with psycopg.connect(db_url) as pg:
@@ -115,11 +126,12 @@ def main() -> int:
             cur.executemany(HEX_UPSERT, hexes)
             cur.executemany(FINANCE_UPSERT, finances)
             cur.executemany(VACANCY_UPSERT, vacancy)
+            cur.executemany(ACCESS_UPSERT, access)
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
           f"{len(hexes)} hex cells, {len(finances)} finance rows, "
-          f"{len(vacancy)} vacancy rows → Project A")
+          f"{len(vacancy)} vacancy rows, {len(access)} access rows → Project A")
     return 0
 
 
