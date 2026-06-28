@@ -59,6 +59,11 @@ const style = (pmtilesUrl: string, hex: HexData): StyleSpecification => ({
       paint: { "fill-color": hexFill("population", hex.breaks.population), "fill-opacity": 0.6 },
     },
     {
+      id: "hex-access", type: "fill", source: "transit", "source-layer": "hex",
+      layout: { visibility: "none" },
+      paint: { "fill-color": hexFill("access", hex.breaks.access), "fill-opacity": 0.6 },
+    },
+    {
       id: "routes", type: "line", source: "transit", "source-layer": "routes",
       layout: { "line-join": "round", "line-cap": "round" },
       paint: {
@@ -84,7 +89,9 @@ const style = (pmtilesUrl: string, hex: HexData): StyleSpecification => ({
   ],
 });
 
-const LAYER: Record<HexMetric, string> = { jobs: "hex-jobs", population: "hex-population" };
+const LAYER: Record<HexMetric, string> = {
+  jobs: "hex-jobs", population: "hex-population", access: "hex-access",
+};
 
 export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -121,14 +128,15 @@ export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
       if (ov === "none") return;
       const feats = map.queryRenderedFeatures(e.point, { layers: [LAYER[ov]] });
       if (!feats.length) return;
-      const p = feats[0].properties as { jobs: number; population: number };
+      const p = feats[0].properties as { jobs: number; population: number; access: number };
       new maplibregl.Popup({ closeButton: true })
         .setLngLat(e.lngLat)
         .setHTML(
           `<div style="color:#0b0f14;font:13px system-ui">` +
           `<strong>${HEX_LABELS[ov]}</strong><br>` +
           `Jobs: ${Number(p.jobs).toLocaleString()}<br>` +
-          `Population: ${Number(p.population).toLocaleString()}</div>`,
+          `Population: ${Number(p.population).toLocaleString()}<br>` +
+          `Jobs reachable (½-mi walk): ${Number(p.access).toLocaleString()}</div>`,
         )
         .addTo(map);
     });
@@ -157,7 +165,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
-      (["jobs", "population"] as HexMetric[]).forEach((m) =>
+      (["jobs", "population", "access"] as HexMetric[]).forEach((m) =>
         map.setLayoutProperty(LAYER[m], "visibility", overlay === m ? "visible" : "none"));
     };
     map.isStyleLoaded() ? apply() : map.once("load", apply);
@@ -184,6 +192,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex }: Props) {
               ["none", "None"],
               ["jobs", HEX_LABELS.jobs],
               ["population", HEX_LABELS.population],
+              ["access", HEX_LABELS.access],
             ] as [Overlay, string][]).map(([val, label]) => (
               <label key={val} className="flex cursor-pointer items-center gap-2 py-1.5">
                 <input

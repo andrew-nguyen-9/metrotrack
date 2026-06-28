@@ -31,13 +31,14 @@ export type TransitData = {
 // Hex choropleth (v1.1). `breaks` are the 4 quintile thresholds per metric,
 // precomputed at tile-build time (pipeline/tiles.py) so the client ships no
 // break math and the legend ranges are exact.
-export type HexCell = { h3: string; jobs: number; population: number };
-export type HexMetric = "jobs" | "population";
+export type HexCell = { h3: string; jobs: number; population: number; access?: number };
+export type HexMetric = "jobs" | "population" | "access";
 export type HexData = {
   count: number;
   breaks: Record<HexMetric, number[]>;
   topJobs: HexCell[];
   topPopulation: HexCell[];
+  topAccess: HexCell[];
 };
 
 // 5-step sequential ramps (low → high), distinct hue per metric so the two
@@ -47,11 +48,13 @@ export type HexData = {
 export const HEX_RAMPS: Record<HexMetric, [string, string, string, string, string]> = {
   jobs: ["#3a2a12", "#7c4d18", "#b6711f", "#e09a36", "#ffd479"],
   population: ["#15324a", "#1f6091", "#2a86c0", "#52b0db", "#9fdcf0"],
+  access: ["#13332a", "#1f6b4a", "#2a9d6a", "#52c98f", "#9ff0c4"],
 };
 
 export const HEX_LABELS: Record<HexMetric, string> = {
   jobs: "Jobs (workplace)",
   population: "Population",
+  access: "Jobs reachable (½-mi walk)",
 };
 
 // Legend range labels from the 4 break thresholds + the step semantics:

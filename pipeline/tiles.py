@@ -72,12 +72,14 @@ def export() -> None:
     hexes = _features(
         con,
         """
-        select h3, jobs, population,
-               ST_AsGeoJSON(ST_GeomFromText(geom_wkt)) as g
-        from gold_hex_metrics
-        order by h3
+        select m.h3, m.jobs, m.population,
+               coalesce(a.jobs_reachable_walk, 0) as access,
+               ST_AsGeoJSON(ST_GeomFromText(m.geom_wkt)) as g
+        from gold_hex_metrics m
+        left join gold_hex_access a using (h3)
+        order by m.h3
         """,
-        ["h3", "jobs", "population"],
+        ["h3", "jobs", "population", "access"],
     )
     # Quintile break points (4 thresholds → 5 bins) for the choropleth + legend.
     # Computed here so the client ships no break math and the legend is exact.
@@ -97,6 +99,10 @@ def export() -> None:
         ).fetchone()[0])
         for m in ("jobs", "population")
     }
+    # Access score lives in gold_hex_access (walkshed reachable jobs); its breaks too.
+    breaks["access"] = _ascending(con.execute(
+        "select quantile_cont(jobs_reachable_walk, [0.2,0.4,0.6,0.8]) from gold_hex_access"
+    ).fetchone()[0])
     # Bounding box across all stops, to frame the initial map view.
     bbox = con.execute(
         "select min(lon), min(lat), max(lon), max(lat) from silver_stops"
@@ -149,9 +155,10 @@ def export() -> None:
         "stopTotal": len(stops),
         "hex": {
             "count": len(hexes),
-            "breaks": breaks,                       # {jobs:[..4..], population:[..4..]}
+            "breaks": breaks,                       # {jobs, population, access: [..4..]}
             "topJobs": _top("jobs"),
             "topPopulation": _top("population"),
+            "topAccess": _top("access"),
         },
     }, indent=2) + "\n")
     print(f"  ok  {PMTILES_OUT.relative_to(REPO)} ({PMTILES_OUT.stat().st_size // 1024} KB)")

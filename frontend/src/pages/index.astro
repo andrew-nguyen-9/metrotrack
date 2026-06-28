@@ -29,6 +29,7 @@ const hex = data.hex;
 const hexTables: { title: string; rows: HexCell[] }[] = [
   { title: "Top areas by jobs", rows: hex.topJobs },
   { title: "Top areas by population", rows: hex.topPopulation },
+  { title: "Top areas by job access (½-mi walk)", rows: hex.topAccess },
 ];
 ---
 
@@ -57,9 +58,10 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
     <h2 id="map-heading" class="text-xl font-medium">Routes, stops &amp; the people they serve</h2>
     <p class="mt-1 text-sm text-text-muted">
       CTA, Pace, and Metra routes and stops, served as vector tiles, over an
-      optional hex overlay of <span class="tabular">jobs</span> (Census LODES) and
-      <span class="tabular">population</span> (Census 2020) across Cook County. Use
-      the overlay control on the map; each cell is an H3 hexagon.
+      optional hex overlay of <span class="tabular">jobs</span> (Census LODES),
+      <span class="tabular">population</span> (Census 2020), and a
+      <span class="tabular">job-access</span> score (jobs reachable within a ½-mi walk)
+      across Cook County. Use the overlay control on the map; each cell is an H3 hexagon.
     </p>
 
     <div class="mt-4 overflow-hidden rounded-lg border border-hairline bg-surface">
@@ -75,7 +77,7 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
         </li>
         <li>
           {data.routes.length} routes · <span class="tabular">{data.stopTotal}</span> stops ·
-          <span class="tabular">{hex.count.toLocaleString()}</span> hex cells (jobs + population)
+          <span class="tabular">{hex.count.toLocaleString()}</span> hex cells (jobs · population · access)
         </li>
       </ul>
     </div>
@@ -134,7 +136,8 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
               <tr class="border-b border-hairline text-text-muted">
                 <th scope="col" class="py-2 pr-4 font-medium">Hex cell (H3)</th>
                 <th scope="col" class="py-2 pr-4 font-medium">Jobs</th>
-                <th scope="col" class="py-2 font-medium">Population</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Population</th>
+                <th scope="col" class="py-2 font-medium">Reachable</th>
               </tr>
             </thead>
             <tbody>
@@ -142,7 +145,8 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
                 <tr class="border-b border-hairline/40">
                   <td class="py-1.5 pr-4 font-mono text-xs text-text-muted">{c.h3}</td>
                   <td class="py-1.5 pr-4 tabular">{c.jobs.toLocaleString()}</td>
-                  <td class="py-1.5 tabular">{c.population.toLocaleString()}</td>
+                  <td class="py-1.5 pr-4 tabular">{c.population.toLocaleString()}</td>
+                  <td class="py-1.5 tabular">{c.access?.toLocaleString() ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -151,7 +155,9 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
       </div>
       <p class="px-4 pb-4 text-xs text-text-muted">
         Jobs: U.S. Census LEHD LODES8 (2022, workplace). Population: U.S. Census 2020
-        Centers of Population. Aggregated to H3 hex cells over Cook County.
+        Centers of Population. Job access: jobs reachable within a ½-mi straight-line
+        walk (openrouteservice network isochrones when configured — see ADR-003).
+        Aggregated to H3 hex cells over Cook County.
       </p>
     </details>
   </section>

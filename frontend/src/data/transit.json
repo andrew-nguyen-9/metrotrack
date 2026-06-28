@@ -219,110 +219,198 @@
         1797,
         2439,
         3731
+      ],
+      "access": [
+        10850,
+        21043,
+        32524,
+        44697
       ]
     },
     "topJobs": [
       {
         "h3": "882664c1a9fffff",
         "jobs": 349153,
-        "population": 8810
+        "population": 8810,
+        "access": 630299
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
-        "population": 17754
+        "population": 17754,
+        "access": 527089
       },
       {
         "h3": "882664c1a1fffff",
         "jobs": 57580,
-        "population": 7084
+        "population": 7084,
+        "access": 537039
       },
       {
         "h3": "882664c1e7fffff",
         "jobs": 51859,
-        "population": 10129
+        "population": 10129,
+        "access": 582335
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
-        "population": 15083
+        "population": 15083,
+        "access": 577230
       },
       {
         "h3": "882664c1a5fffff",
         "jobs": 40630,
-        "population": 8016
+        "population": 8016,
+        "access": 168283
       },
       {
         "h3": "88275934edfffff",
         "jobs": 37820,
-        "population": 0
+        "population": 0,
+        "access": 77656
       },
       {
         "h3": "882664c1adfffff",
         "jobs": 34968,
-        "population": 6248
+        "population": 6248,
+        "access": 255334
       },
       {
         "h3": "8827592249fffff",
         "jobs": 29481,
-        "population": 2030
+        "population": 2030,
+        "access": 37169
       },
       {
         "h3": "88275930abfffff",
         "jobs": 26757,
-        "population": 3621
+        "population": 3621,
+        "access": 40448
       }
     ],
     "topPopulation": [
       {
         "h3": "882664c1edfffff",
         "jobs": 8697,
-        "population": 20596
+        "population": 20596,
+        "access": 548483
       },
       {
         "h3": "882664c10dfffff",
         "jobs": 2747,
-        "population": 18264
+        "population": 18264,
+        "access": 160236
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
-        "population": 17754
+        "population": 17754,
+        "access": 527089
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
-        "population": 15083
+        "population": 15083,
+        "access": 577230
       },
       {
         "h3": "882664c16bfffff",
         "jobs": 2623,
-        "population": 14917
+        "population": 14917,
+        "access": 134924
       },
       {
         "h3": "882664c13bfffff",
         "jobs": 3930,
-        "population": 13944
+        "population": 13944,
+        "access": 211079
       },
       {
         "h3": "882664d8c3fffff",
         "jobs": 5821,
-        "population": 13310
+        "population": 13310,
+        "access": 65537
       },
       {
         "h3": "882664c1b5fffff",
         "jobs": 4618,
-        "population": 12969
+        "population": 12969,
+        "access": 527218
       },
       {
         "h3": "882664c101fffff",
         "jobs": 2304,
-        "population": 12625
+        "population": 12625,
+        "access": 210978
       },
       {
         "h3": "882664c1e5fffff",
         "jobs": 12660,
-        "population": 12100
+        "population": 12100,
+        "access": 220875
+      }
+    ],
+    "topAccess": [
+      {
+        "h3": "882664c1a9fffff",
+        "jobs": 349153,
+        "population": 8810,
+        "access": 630299
+      },
+      {
+        "h3": "882664c1e7fffff",
+        "jobs": 51859,
+        "population": 10129,
+        "access": 582335
+      },
+      {
+        "h3": "882664c1e1fffff",
+        "jobs": 45022,
+        "population": 15083,
+        "access": 577230
+      },
+      {
+        "h3": "882664cf5dfffff",
+        "jobs": 2187,
+        "population": 2648,
+        "access": 574469
+      },
+      {
+        "h3": "882664cf13fffff",
+        "jobs": 234,
+        "population": 2443,
+        "access": 573972
+      },
+      {
+        "h3": "882664cf4bfffff",
+        "jobs": 2337,
+        "population": 4226,
+        "access": 552215
+      },
+      {
+        "h3": "882664cf11fffff",
+        "jobs": 311,
+        "population": 704,
+        "access": 550116
+      },
+      {
+        "h3": "882664c1edfffff",
+        "jobs": 8697,
+        "population": 20596,
+        "access": 548483
+      },
+      {
+        "h3": "882664cf57fffff",
+        "jobs": 60,
+        "population": 689,
+        "access": 545276
+      },
+      {
+        "h3": "882664cc6bfffff",
+        "jobs": 340,
+        "population": 478,
+        "access": 539944
       }
     ]
   }
