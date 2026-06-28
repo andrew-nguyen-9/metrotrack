@@ -85,7 +85,7 @@ const sources = data.sources;
                     <td class="py-1.5 pr-4 tabular">
                       {r.rta_amount == null ? "—" : fmtUSD(r.rta_amount)}
                       {r.rta_kind && (
-                        <span class="ml-1 text-text-muted font-normal not-tabular">
+                        <span class="ml-1 text-text-muted font-normal">
                           ({RTA_KIND_LABELS[r.rta_kind] ?? r.rta_kind})
                         </span>
                       )}
