@@ -33,3 +33,10 @@ models:
         tests: [not_null]
       - name: fiscal_year
         tests: [not_null]
+  - name: gold_vacancy
+    description: Open-postings time series per service board for the spine + hiring.json export.
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: as_of
+        tests: [not_null]

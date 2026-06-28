@@ -31,3 +31,12 @@ models:
         tests: [not_null]
       - name: fiscal_year
         tests: [not_null]
+  - name: silver_vacancy
+    description: Weekly open-postings snapshots per service board (one row per authority × date).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: as_of
+        tests: [not_null]
+      - name: open_postings
+        tests: [not_null]
