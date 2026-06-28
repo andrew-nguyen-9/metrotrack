@@ -95,3 +95,22 @@ insert into public.authorities (id, name, mode, url) values
   ('pace',  'Pace Suburban Bus',         'bus',   'https://www.pacebus.com'),
   ('metra', 'Metra Commuter Rail',       'rail',  'https://metra.com')
 on conflict (id) do nothing;
+
+-- ── funding pillar: operating actual (NTD) vs RTA budget/plan [v1.2.4] ──
+create table if not exists public.agency_finances (
+  authority_id     text    not null,                 -- cta | metra | pace
+  fiscal_year      integer not null,
+  actual_audited   bigint,                            -- FTA NTD operating expense ($)
+  fare_revenue     bigint,                            -- FTA NTD ($)
+  unlinked_trips   bigint,                            -- FTA NTD
+  rta_kind         text,                              -- actual | estimate | budget | plan
+  rta_amount       bigint,                            -- RTA adopted operating budget ($)
+  farebox_recovery double precision,                  -- fare_revenue / actual_audited
+  primary key (authority_id, fiscal_year)
+);
+
+alter table public.agency_finances enable row level security;
+
+drop policy if exists "public read agency_finances" on public.agency_finances;
+create policy "public read agency_finances" on public.agency_finances
+  for select to anon, authenticated using (true);

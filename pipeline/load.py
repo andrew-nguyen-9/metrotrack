@@ -55,6 +55,20 @@ on conflict (h3) do update set
   geom            = excluded.geom
 """
 
+FINANCE_UPSERT = """
+insert into public.agency_finances
+  (authority_id, fiscal_year, actual_audited, fare_revenue, unlinked_trips,
+   rta_kind, rta_amount, farebox_recovery)
+values (%s, %s, %s, %s, %s, %s, %s, %s)
+on conflict (authority_id, fiscal_year) do update set
+  actual_audited   = excluded.actual_audited,
+  fare_revenue     = excluded.fare_revenue,
+  unlinked_trips   = excluded.unlinked_trips,
+  rta_kind         = excluded.rta_kind,
+  rta_amount       = excluded.rta_amount,
+  farebox_recovery = excluded.farebox_recovery
+"""
+
 
 def main() -> int:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
@@ -75,6 +89,10 @@ def main() -> int:
         "select h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
         "from gold_hex_metrics"
     ).fetchall()
+    finances = con.execute(
+        "select authority_id, fiscal_year, actual_audited, fare_revenue, "
+        "unlinked_trips, rta_kind, rta_amount, farebox_recovery from gold_funding"
+    ).fetchall()
     con.close()
 
     with psycopg.connect(db_url) as pg:
@@ -82,10 +100,11 @@ def main() -> int:
             cur.executemany(ROUTE_UPSERT, routes)
             cur.executemany(STOP_UPSERT, stops)
             cur.executemany(HEX_UPSERT, hexes)
+            cur.executemany(FINANCE_UPSERT, finances)
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
-          f"{len(hexes)} hex cells → Project A")
+          f"{len(hexes)} hex cells, {len(finances)} finance rows → Project A")
     return 0
 
 
