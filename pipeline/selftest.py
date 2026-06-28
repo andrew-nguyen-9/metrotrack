@@ -9,12 +9,14 @@ Run: `python pipeline/selftest.py` (inside the project venv).
 """
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 from pathlib import Path
 
 import bronze
 import census
+import funding
 import gtfs
 
 
@@ -97,6 +99,50 @@ def main() -> int:
     assert crows[0] == "bg_geoid,population,lat,lon", crows
     assert crows[1] == "170310001001,1135,41.880000,-087.630000" and len(crows) == 2, crows
     passed.append("parse_cenpop_bg assembles bg_geoid, strips BOM/+, filters Cook")
+
+    # NTD parse — Chicago reporters only; Pace's two reports fold into one line;
+    # foreign agencies dropped; numeric fields summed.
+    ntd = funding.parse_ntd(json.dumps([
+        {"ntd_id": "50066", "report_year": "2024", "sum_total_operating_expenses": "1918053610",
+         "sum_fare_revenues_earned": "354907822", "sum_unlinked_passenger_trips": "309197026"},
+        {"ntd_id": "50113", "report_year": "2024", "sum_total_operating_expenses": "267529288",
+         "sum_fare_revenues_earned": "21353765", "sum_unlinked_passenger_trips": "17906275"},
+        {"ntd_id": "50182", "report_year": "2024", "sum_total_operating_expenses": "219913374",
+         "sum_fare_revenues_earned": "8805608", "sum_unlinked_passenger_trips": "3215055"},
+        {"ntd_id": "00001", "report_year": "2024", "sum_total_operating_expenses": "999"},  # not Chicago
+    ]).encode())
+    nrows = ntd.decode().splitlines()
+    assert nrows[0] == "authority_id,fiscal_year,operating_expense,fare_revenue,unlinked_trips", nrows
+    assert nrows[1] == "cta,2024,1918053610,354907822,309197026", nrows
+    # Pace = 50113 + 50182 summed; foreign reporter dropped → exactly 2 data rows.
+    assert nrows[2] == "pace,2024,487442662,30159373,21121330" and len(nrows) == 3, nrows
+    passed.append("parse_ntd keeps Chicago boards, folds Pace's two reports, drops others")
+
+    # RTA budget parse — thousands→dollars, ADA folds into Pace, kind preserved.
+    rta = funding.parse_rta_budget(
+        b"authority_id,fiscal_year,kind,amount_thousands\n"
+        b"cta,2025,budget,2156522\n"
+        b"metra,2025,budget,1135000\n"
+        b"pace,2025,budget,339297\n"
+        b"ada,2025,budget,281231\n"
+    )
+    brows = rta.decode().splitlines()
+    assert brows[0] == "authority_id,fiscal_year,kind,amount", brows
+    assert "cta,2025,budget,2156522000" in brows, brows
+    assert "pace,2025,budget,620528000" in brows, brows  # 339,297 + 281,231 (ADA) → dollars
+    passed.append("parse_rta_budget folds ADA into Pace, converts thousands→dollars")
+
+    # Reconciliation guard: a transcription fat-finger must fail loudly.
+    try:
+        funding.parse_rta_budget(
+            b"authority_id,fiscal_year,kind,amount_thousands\n"
+            b"cta,2025,budget,2156522\nmetra,2025,budget,1135000\n"
+            b"pace,2025,budget,339297\nada,2025,budget,281999\n"  # ADA off by 768k
+        )
+        assert False, "reconciliation should have rejected the bad total"
+    except ValueError as e:
+        assert "FY2025" in str(e), e
+    passed.append("parse_rta_budget reconciles board sum vs Table 2 total (rejects fat-finger)")
 
     for c in passed:
         print(f"  ok  {c}")

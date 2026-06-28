@@ -79,6 +79,14 @@
     "table": "trips",
     "written_at": "2026-06-27T22:33:29.071621+00:00"
   },
+  "ntd/operating": {
+    "parquet": "data/bronze/ntd/operating.parquet",
+    "rows": 9,
+    "sha256": "9fff039b2873f636e373e847eed41a37c2a74c6003aee3f0ff4ffef3b7ca485b",
+    "source": "ntd",
+    "table": "operating",
+    "written_at": "2026-06-28T00:26:20.182193+00:00"
+  },
   "pace/routes": {
     "parquet": "data/bronze/pace/routes.parquet",
     "rows": 8,
@@ -110,5 +118,13 @@
     "source": "pace",
     "table": "trips",
     "written_at": "2026-06-27T22:33:31.551615+00:00"
+  },
+  "rta/budget": {
+    "parquet": "data/bronze/rta/budget.parquet",
+    "rows": 15,
+    "sha256": "afc9dfec1b3ae014b26419dc33b4224ddccd2ccf660e5633ed323b8e8e588282",
+    "source": "rta",
+    "table": "budget",
+    "written_at": "2026-06-28T00:26:20.197397+00:00"
   }
 }
