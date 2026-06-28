@@ -20,6 +20,7 @@ import census
 import funding
 import gtfs
 import hiring
+import metros
 
 
 def main() -> int:
@@ -200,6 +201,34 @@ def main() -> int:
     sample = access.parse_isochrone(access.SAMPLE.read_bytes())
     assert [r["value_s"] for r in sample] == [900, 1800, 2700], sample
     passed.append("isochrone sample fixture parses to 15/30/45-min rings")
+
+    # Metro registry: the real committed chicago.toml parses + validates, and the
+    # invariants reject a bad slug / degenerate bbox / modeless agency. [v2.0.1]
+    assert "chicago" in metros.list_metros()
+    chi = metros.load_metro("chicago")
+    assert chi.metro_id == "chicago" and chi.tz == "America/Chicago", chi
+    assert chi.bbox[0] < chi.bbox[2] and chi.bbox[1] < chi.bbox[3], chi.bbox
+    assert {a.id for a in chi.agencies} == {"cta", "metra", "pace"}, chi.agencies
+    assert next(a for a in chi.agencies if a.id == "pace").ntd_ids == ("50113", "50182")
+    passed.append("load_metro(chicago) parses + validates the authored config")
+
+    _ok = {"slug": "x", "name": "X", "tz": "UTC", "status": "live",
+           "bbox": [-1, -1, 1, 1], "census": {"state_fips": "17", "lodes_state": "il"},
+           "agencies": [{"id": "a", "name": "A", "mode": "bus", "url": "u"}]}
+    assert metros.parse_metro("x", _ok).slug == "x"  # the happy path is accepted
+    for bad, why in [
+        ({**_ok, "slug": "Bad_Slug"}, "bad slug"),
+        ({**_ok, "bbox": [1, 1, -1, -1]}, "degenerate bbox"),
+        ({**_ok, "status": "maybe"}, "bad status"),
+        ({**_ok, "agencies": []}, "no agencies"),
+        ({**_ok, "agencies": [{"id": "a", "name": "A", "mode": "plane", "url": "u"}]}, "bad mode"),
+    ]:
+        try:
+            metros.parse_metro(bad["slug"], bad)
+            assert False, f"validator should reject: {why}"
+        except ValueError:
+            pass
+    passed.append("metro validators reject bad slug/bbox/status/mode + empty agencies")
 
     for c in passed:
         print(f"  ok  {c}")
