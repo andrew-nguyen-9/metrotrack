@@ -1,0 +1,24 @@
+{
+  "asOf": "2026-06-27",
+  "source": {
+    "label": "Each authority's public job listing \u2014 CTA (Taleo), Metra (Cadient), Pace (Oracle Recruiting)",
+    "note": "Open postings listed, snapshotted weekly. This is hiring activity, not a vacancy rate or an understaffing measure."
+  },
+  "rows": [
+    {
+      "authority_id": "cta",
+      "as_of": "2026-06-27",
+      "open_postings": 13
+    },
+    {
+      "authority_id": "metra",
+      "as_of": "2026-06-27",
+      "open_postings": 21
+    },
+    {
+      "authority_id": "pace",
+      "as_of": "2026-06-27",
+      "open_postings": 57
+    }
+  ]
+}
