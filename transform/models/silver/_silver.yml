@@ -24,3 +24,10 @@ models:
         tests: [not_null]
       - name: population
         tests: [not_null]
+  - name: silver_funding
+    description: Operating expense per service board × fiscal year — NTD audited actuals joined to the RTA adopted budget/plan (one row per authority+year).
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: fiscal_year
+        tests: [not_null]

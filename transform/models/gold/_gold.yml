@@ -26,3 +26,10 @@ models:
         tests: [not_null, unique]
       - name: geom_wkt
         tests: [not_null]
+  - name: gold_funding
+    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per authority × year.
+    columns:
+      - name: authority_id
+        tests: [not_null]
+      - name: fiscal_year
+        tests: [not_null]
