@@ -17,6 +17,9 @@ vars:
   # H3 resolution for the population/jobs overlay (res 8 ≈ 0.74 km²/cell). See
   # docs/phases/v1/v1.1/PLAN.md. Override: `dbt build --vars '{h3_res: 9}'`.
   h3_res: 8
+  # Walk radius (metres) for the v1.4 straight-line walkshed access score (½ mi ≈
+  # 805 m, ACCESS_SCORE G5). Override: `dbt build --vars '{walk_radius_m: 1609}'`.
+  walk_radius_m: 805
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into

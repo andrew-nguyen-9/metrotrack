@@ -40,3 +40,10 @@ models:
         tests: [not_null]
       - name: as_of
         tests: [not_null]
+  - name: gold_hex_access
+    description: Straight-line walkshed job-access score per hex (jobs reachable within walk_radius_m).
+    columns:
+      - name: h3
+        tests: [not_null, unique]
+      - name: jobs_reachable_walk
+        tests: [not_null]
