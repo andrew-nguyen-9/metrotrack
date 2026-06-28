@@ -31,6 +31,7 @@ def content_hash(data: bytes) -> str:
 
 @dataclass
 class BronzeReceipt:
+    metro: str
     source: str
     table: str
     sha256: str
@@ -48,16 +49,20 @@ def _save_manifest(manifest: dict) -> None:
     MANIFEST.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
 
-def ingest_csv(source: str, table: str, csv_bytes: bytes, *, header: bool = True) -> BronzeReceipt:
-    """Convert raw CSV bytes → bronze parquet. Idempotent on the content hash.
+def ingest_csv(source: str, table: str, csv_bytes: bytes, *, header: bool = True,
+               metro: str = "chicago") -> BronzeReceipt:
+    """Convert raw CSV bytes → per-metro bronze parquet. Idempotent on the content hash.
 
-    Returns the existing receipt untouched when the bytes match what's on disk, so
-    a nightly re-run of an unchanged source neither rewrites nor duplicates.
+    Bronze lands at `data/bronze/<metro>/<source>/<table>.parquet` and the manifest
+    key + hash are namespaced by `(metro, source, table)` [H2a, H4a], so two metros
+    sharing a source slug (e.g. `cta`) never collide. Returns the existing receipt
+    untouched when the bytes match what's on disk, so a nightly re-run of an unchanged
+    source neither rewrites nor duplicates.
     """
-    key = f"{source}/{table}"
+    key = f"{metro}/{source}/{table}"
     sha = content_hash(csv_bytes)
     manifest = _load_manifest()
-    out = BRONZE_ROOT / source / f"{table}.parquet"
+    out = BRONZE_ROOT / metro / source / f"{table}.parquet"
 
     if manifest.get(key, {}).get("sha256") == sha and out.exists():
         return BronzeReceipt(**manifest[key])  # unchanged: no rewrite
@@ -86,6 +91,7 @@ def ingest_csv(source: str, table: str, csv_bytes: bytes, *, header: bool = True
         rel = out.as_posix()  # bronze root redirected outside the repo (e.g. selftest)
 
     receipt = BronzeReceipt(
+        metro=metro,
         source=source,
         table=table,
         sha256=sha,

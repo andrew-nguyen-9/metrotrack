@@ -19,6 +19,16 @@ frontend/dist/
 frontend/.astro/
 frontend/.vercel/
 
+# Large, re-fetchable GTFS bronze from a full (non-sample) `--metro` run. The four
+# GTFS table names only ever appear under data/bronze/<metro>/<agency>/, so this is
+# metro/agency-agnostic. The committed Chicago *sample* receipts stay tracked (git
+# ignores only untracked files); the manifest + canonical receipts (source CSVs,
+# SOURCE.md, PDFs, ORS fixture) are kept. [H2a, I7a]
+data/bronze/*/*/stops.parquet
+data/bronze/*/*/routes.parquet
+data/bronze/*/*/trips.parquet
+data/bronze/*/*/shapes.parquet
+
 # Tiles (built artifacts, not committed)
 *.pmtiles
 *.mbtiles

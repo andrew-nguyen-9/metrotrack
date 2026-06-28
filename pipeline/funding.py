@@ -24,20 +24,24 @@ no-network selftest. See docs/phases/v1/v1.2/PLAN.md.
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import io
 import json
 import sys
 import urllib.parse
 import urllib.request
-from pathlib import Path
 
-import bronze
+try:  # dual-mode: `python -m pipeline.funding` vs `python pipeline/funding.py`
+    from . import bronze, cli
+except ImportError:  # pragma: no cover
+    import bronze
+    import cli
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-
-# NTD reporter id → MetroTrack authority. Pace runs Regional ADA Paratransit, so
-# its two NTD reports fold into one `pace` line (matches the RTA budget treatment).
+# Default NTD reporter id → authority map (Chicago). Pace runs Regional ADA
+# Paratransit, so its two NTD reports fold into one `pace` line (matches the RTA
+# budget treatment). The pipeline path derives this from metros/<slug>.toml agencies;
+# the default keeps the no-network parse selftest self-contained.
 NTD_AUTHORITY = {
     "50066": "cta",
     "50118": "metra",
@@ -46,6 +50,21 @@ NTD_AUTHORITY = {
 }
 NTD_DATASET = "g27i-aq2u"
 NTD_URL = f"https://data.transportation.gov/resource/{NTD_DATASET}.json"
+
+
+def ntd_authority_map(metro) -> dict[str, str]:
+    """Build {ntd_id: authority_id} from a metro's agencies (multiple ids fold in)."""
+    out: dict[str, str] = {}
+    for a in metro.agencies:
+        for nid in a.ntd_ids:
+            out[str(nid)] = a.id
+    return out
+
+
+def budget_source(metro):
+    """The transcribed RTA-style budget CSV under this metro's bronze."""
+    return cli.bronze_dir(metro.slug, "rta") / "budget_source.csv"
+
 
 # Adopted budget total per fiscal year ($ thousands), straight from Table 2's
 # "Total Service Board Expenses" row — the reconciliation key that catches a
@@ -60,20 +79,21 @@ RTA_BOARD_TOTALS = {
 RTA_KINDS = {"actual", "estimate", "budget", "plan"}
 # ADA Paratransit folds into Pace (Pace operates it).
 RTA_FOLD = {"ada": "pace"}
-BUDGET_SOURCE = REPO_ROOT / "data" / "bronze" / "rta" / "budget_source.csv"
 
 
-def parse_ntd(raw_json: bytes) -> bytes:
+def parse_ntd(raw_json: bytes, authority_map: dict[str, str] | None = None) -> bytes:
     """Socrata NTD records → `authority_id,fiscal_year,operating_expense,fare_revenue,unlinked_trips`.
 
-    Keeps only the four Chicago service-board reporters, maps each to its authority,
-    and sums Pace's two reports per year. Missing numeric fields read as 0.
+    Keeps only the metro's service-board reporters (default: Chicago's), maps each to
+    its authority, and sums multi-report authorities (e.g. Pace) per year. Missing
+    numeric fields read as 0.
     """
+    amap = NTD_AUTHORITY if authority_map is None else authority_map
     rows = json.loads(raw_json)
     agg: dict[tuple[str, int], list[int]] = {}
     for r in rows:
         ntd_id = str(r.get("ntd_id", "")).strip()
-        auth = NTD_AUTHORITY.get(ntd_id)
+        auth = amap.get(ntd_id)
         if auth is None:
             continue
         year = int(str(r["report_year"]).strip())
@@ -135,8 +155,8 @@ def _int(v) -> int:
     return round(float(v))
 
 
-def fetch_ntd() -> bytes:
-    ids = ",".join(f"'{i}'" for i in NTD_AUTHORITY)
+def fetch_ntd(ntd_ids) -> bytes:
+    ids = ",".join(f"'{i}'" for i in ntd_ids)
     query = urllib.parse.urlencode({
         "$select": "ntd_id,report_year,sum_total_operating_expenses,"
                    "sum_fare_revenues_earned,sum_unlinked_passenger_trips",
@@ -147,14 +167,44 @@ def fetch_ntd() -> bytes:
         return r.read()
 
 
-def ingest() -> int:
-    """Fetch NTD actuals + read the transcribed RTA budget → content-hashed bronze."""
-    ntd = bronze.ingest_csv("ntd", "operating", parse_ntd(fetch_ntd()))
-    budget = bronze.ingest_csv("rta", "budget", parse_rta_budget(BUDGET_SOURCE.read_bytes()))
-    print(f"  ok  ntd/operating.parquet ({ntd.rows} agency-years)")
-    print(f"  ok  rta/budget.parquet ({budget.rows} board-year-kind rows)")
+def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
+    """Validate geo/FIPS, probe NTD, and confirm the budget transcription is present. [H20a]"""
+    report = cli.DryRunReport(metro.slug, "funding")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    report.checks.append(cli.reach("ntd", NTD_URL) if check_network
+                         else cli.Check("ntd", "pass", NTD_URL))
+    src = budget_source(metro)
+    report.add("budget_source", "pass" if src.exists() else "fail",
+               src.as_posix() if src.exists() else f"missing {src.as_posix()}")
+    return report
+
+
+def ingest(metro) -> int:
+    """Fetch NTD actuals + read the transcribed budget → per-metro content-hashed bronze."""
+    amap = ntd_authority_map(metro)
+    if not amap:
+        sys.exit(f"{metro.slug}: no NTD ids configured on any agency")
+    ntd = bronze.ingest_csv("ntd", "operating",
+                            parse_ntd(fetch_ntd(amap), amap), metro=metro.slug)
+    budget = bronze.ingest_csv("rta", "budget",
+                               parse_rta_budget(budget_source(metro).read_bytes()),
+                               metro=metro.slug)
+    print(f"  ok  {metro.slug}/ntd/operating.parquet ({ntd.rows} agency-years)")
+    print(f"  ok  {metro.slug}/rta/budget.parquet ({budget.rows} board-year-kind rows)")
     return 0
 
 
+def main(argv: list[str] | None = None) -> int:
+    ap = cli.add_metro_args(argparse.ArgumentParser(description=__doc__))
+    args = ap.parse_args(argv)
+    metro = cli.resolve_metro(args.metro)
+    if args.dry_run:
+        report = dry_run(metro)
+        print(report.render())
+        return 0 if report.ok else 1
+    return ingest(metro)
+
+
 if __name__ == "__main__":
-    sys.exit(ingest())
+    sys.exit(main())

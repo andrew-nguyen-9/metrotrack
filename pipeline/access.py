@@ -15,13 +15,24 @@ See docs/phases/v1/v1.4/PLAN.md.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import sys
-from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-SAMPLE = REPO_ROOT / "data" / "bronze" / "ors" / "isochrone_sample.geojson"
+try:  # dual-mode: `python -m pipeline.access` vs `python pipeline/access.py`
+    from . import cli
+except ImportError:  # pragma: no cover
+    import cli
+
+
+def sample_path(metro: str = cli.DEFAULT_METRO):
+    """The committed ORS isochrone schema fixture under a metro's bronze."""
+    return cli.bronze_dir(metro, "ors") / "isochrone_sample.geojson"
+
+
+# Default (Chicago) fixture, for the no-arg smoke run + selftest convenience.
+SAMPLE = sample_path()
 
 ORS_ISOCHRONE_URL = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
 # ACCESS_SCORE cutoffs (G2) in seconds — three rings.
@@ -69,9 +80,45 @@ def fetch_isochrone(lon: float, lat: float, cutoffs_s: list[int] | None = None) 
         return r.read()
 
 
-if __name__ == "__main__":
-    # Smoke: parse the committed sample (works with no key) and report the rings.
-    rings = parse_isochrone(SAMPLE.read_bytes())
+def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
+    """Validate geo/FIPS, confirm the ORS fixture parses, and probe the ORS API. [H20a]"""
+    report = cli.DryRunReport(metro.slug, "access")
+    for c in cli.geo_checks(metro):
+        report.checks.append(c)
+    src = sample_path(metro.slug)
+    try:
+        rings = parse_isochrone(src.read_bytes())
+        report.add("ors_sample", "pass", f"{len(rings)} rings parse from {src.as_posix()}")
+    except (OSError, ValueError) as e:
+        report.add("ors_sample", "fail", f"{src.as_posix()}: {e}")
+    # ORS is key-gated + POST-only (HEAD 404s), and its absence is a documented
+    # straight-line fallback, not a hard failure — so reachability here is advisory.
+    if check_network:
+        probe = cli.reach("ors_api", ORS_ISOCHRONE_URL)
+        if probe.status != "pass":
+            probe = cli.Check("ors_api", "blocked",
+                              f"{probe.detail} (ORS key-gated/POST-only; straight-line fallback)")
+        report.checks.append(probe)
+    else:
+        report.add("ors_api", "pass", ORS_ISOCHRONE_URL)
+    return report
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = cli.add_metro_args(argparse.ArgumentParser(description=__doc__))
+    args = ap.parse_args(argv)
+    metro = cli.resolve_metro(args.metro)
+    if args.dry_run:
+        report = dry_run(metro)
+        print(report.render())
+        return 0 if report.ok else 1
+    # Default action: parse the committed sample (works with no key) + report rings.
+    rings = parse_isochrone(sample_path(metro.slug).read_bytes())
     for r in rings:
         print(f"  ring {r['value_s']}s  {r['geometry']['type']}")
-    print(f"ok  {len(rings)} isochrone rings parsed from the sample fixture")
+    print(f"ok  {len(rings)} isochrone rings parsed from the {metro.slug} sample fixture")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

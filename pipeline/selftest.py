@@ -17,6 +17,7 @@ from pathlib import Path
 import access
 import bronze
 import census
+import cli
 import funding
 import gtfs
 import hiring
@@ -37,11 +38,18 @@ def main() -> int:
         bronze.MANIFEST = bronze.BRONZE_ROOT / "manifest.json"
 
         csv = b"stop_id,stop_name\n00501,Howard\n30374,Clark/Lake\n"
-        r1 = bronze.ingest_csv("selftest", "stops", csv)
-        assert r1.rows == 2, r1
-        parquet = bronze.BRONZE_ROOT / "selftest" / "stops.parquet"
+        r1 = bronze.ingest_csv("selftest", "stops", csv, metro="chicago")
+        assert r1.rows == 2 and r1.metro == "chicago", r1
+        # Bronze is namespaced per metro: data/bronze/<metro>/<source>/<table>.parquet.
+        parquet = bronze.BRONZE_ROOT / "chicago" / "selftest" / "stops.parquet"
         assert parquet.exists()
-        passed.append("ingest_csv writes parquet (2 rows)")
+        passed.append("ingest_csv writes per-metro parquet (data/bronze/<metro>/…)")
+
+        # A different metro with the same source slug must not collide.
+        other = bronze.ingest_csv("selftest", "stops", csv, metro="othertown")
+        assert (bronze.BRONZE_ROOT / "othertown" / "selftest" / "stops.parquet").exists()
+        assert other.parquet != r1.parquet, (other.parquet, r1.parquet)
+        passed.append("ingest_csv namespaces bronze by metro (no cross-metro collision)")
 
         # Idempotent: identical bytes must not rewrite the file.
         before = parquet.stat().st_mtime_ns
@@ -197,8 +205,8 @@ def main() -> int:
         pass
     passed.append("parse_isochrone rejects an ORS error body")
 
-    # The committed sample fixture parses to its three rings.
-    sample = access.parse_isochrone(access.SAMPLE.read_bytes())
+    # The committed sample fixture parses to its three rings (per-metro bronze path).
+    sample = access.parse_isochrone(access.sample_path("chicago").read_bytes())
     assert [r["value_s"] for r in sample] == [900, 1800, 2700], sample
     passed.append("isochrone sample fixture parses to 15/30/45-min rings")
 
@@ -229,6 +237,52 @@ def main() -> int:
         except ValueError:
             pass
     passed.append("metro validators reject bad slug/bbox/status/mode + empty agencies")
+
+    # ── v2.0.3: parametrized pipeline (`--metro`) ──────────────────────────
+    # The shared CLI helper resolves the real Chicago config and exits loud on a
+    # bogus slug (a typo must fail, never silently no-op).
+    chi_cfg = cli.resolve_metro("chicago")
+    assert chi_cfg.slug == "chicago"
+    try:
+        cli.resolve_metro("definitely-not-a-metro")
+        assert False, "resolve_metro should reject an unknown slug"
+    except SystemExit:
+        pass
+    passed.append("cli.resolve_metro loads chicago + exits loud on a bogus slug")
+
+    # Per-metro bronze path composition is the same for every source.
+    assert cli.bronze_dir("chicago", "cta").as_posix().endswith("data/bronze/chicago/cta")
+    assert cli.bronze_dir("sf", "bart").as_posix().endswith("data/bronze/sf/bart")
+    passed.append("cli.bronze_dir composes data/bronze/<metro>/<source>")
+
+    # geo_checks pass on a valid metro and flag a degenerate bbox / missing FIPS.
+    assert all(c.status == "pass" for c in cli.geo_checks(chi_cfg))
+    bad_geo = metros.Metro(slug="x", name="X", tz="UTC", status="live",
+                           bbox=(0.0, 0.0, 1.0, 1.0), agencies=(), raw={})
+    statuses = {c.name: c.status for c in cli.geo_checks(bad_geo)}
+    assert statuses["census FIPS"] == "fail", statuses  # no [census] block
+    passed.append("cli.geo_checks passes chicago + fails a metro missing census FIPS")
+
+    # Every feed entrypoint resolves the Chicago config + its bronze path and returns
+    # a pass/fail dry-run struct (no-network: geo + config validity only). [H20a]
+    entrypoints = {
+        "gtfs": gtfs, "census": census, "funding": funding,
+        "hiring": hiring, "access": access,
+    }
+    for name, mod in entrypoints.items():
+        report = mod.dry_run(chi_cfg, check_network=False)
+        assert isinstance(report, cli.DryRunReport), (name, report)
+        assert report.entrypoint == name and report.metro == "chicago", (name, report)
+        assert report.ok, f"{name} dry-run should pass for chicago: {report.render()}"
+        assert report.checks, f"{name} dry-run produced no checks"
+    passed.append("each entrypoint resolves chicago + returns a passing dry-run struct")
+
+    # The dry-run struct reports failure (non-zero verdict) when a check fails.
+    failing = cli.DryRunReport("chicago", "demo")
+    failing.add("ok-check", "pass")
+    failing.add("bad-check", "fail", "boom")
+    assert not failing.ok and "FAIL" in failing.render()
+    passed.append("DryRunReport.ok is false when any check fails")
 
     for c in passed:
         print(f"  ok  {c}")
