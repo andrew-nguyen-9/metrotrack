@@ -14,6 +14,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+import access
 import bronze
 import census
 import funding
@@ -174,6 +175,31 @@ def main() -> int:
         "source_url": "u", "method": "taleo"}], "2026-07-04")
     assert len(grown.decode().strip().splitlines()) == 3  # new date appends
     passed.append("append_snapshot replaces same-day, appends new dates")
+
+    # Access: ORS isochrone parse — rings sorted by cutoff, geometry kept.
+    iso = access.parse_isochrone(json.dumps({
+        "type": "FeatureCollection",
+        "features": [
+            {"properties": {"value": 1800.0}, "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}},
+            {"properties": {"value": 900.0}, "geometry": {"type": "Polygon", "coordinates": [[[0, 0], [2, 0], [2, 2], [0, 0]]]}},
+        ],
+    }))
+    assert [r["value_s"] for r in iso] == [900, 1800], iso  # sorted ascending
+    assert iso[0]["geometry"]["type"] == "Polygon"
+    passed.append("parse_isochrone sorts rings by cutoff + keeps geometry")
+
+    # An ORS error body (no features) must fail loudly, not yield zero rings silently.
+    try:
+        access.parse_isochrone(json.dumps({"error": {"code": 2003, "message": "quota"}}))
+        assert False, "parse_isochrone should reject a non-FeatureCollection body"
+    except ValueError:
+        pass
+    passed.append("parse_isochrone rejects an ORS error body")
+
+    # The committed sample fixture parses to its three rings.
+    sample = access.parse_isochrone(access.SAMPLE.read_bytes())
+    assert [r["value_s"] for r in sample] == [900, 1800, 2700], sample
+    passed.append("isochrone sample fixture parses to 15/30/45-min rings")
 
     for c in passed:
         print(f"  ok  {c}")
