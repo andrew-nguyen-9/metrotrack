@@ -114,3 +114,19 @@ alter table public.agency_finances enable row level security;
 drop policy if exists "public read agency_finances" on public.agency_finances;
 create policy "public read agency_finances" on public.agency_finances
   for select to anon, authenticated using (true);
+
+-- ── hiring pillar: weekly open-postings snapshots [v1.3.4] ─────────────
+create table if not exists public.vacancy_postings (
+  authority_id   text    not null,                   -- cta | metra | pace
+  as_of          date    not null,
+  open_postings  integer not null,
+  source_url     text,
+  method         text,                               -- taleo | cadient | oracle
+  primary key (authority_id, as_of)
+);
+
+alter table public.vacancy_postings enable row level security;
+
+drop policy if exists "public read vacancy_postings" on public.vacancy_postings;
+create policy "public read vacancy_postings" on public.vacancy_postings
+  for select to anon, authenticated using (true);

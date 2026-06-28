@@ -69,6 +69,16 @@ on conflict (authority_id, fiscal_year) do update set
   farebox_recovery = excluded.farebox_recovery
 """
 
+VACANCY_UPSERT = """
+insert into public.vacancy_postings
+  (authority_id, as_of, open_postings, source_url, method)
+values (%s, %s, %s, %s, %s)
+on conflict (authority_id, as_of) do update set
+  open_postings = excluded.open_postings,
+  source_url    = excluded.source_url,
+  method        = excluded.method
+"""
+
 
 def main() -> int:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
@@ -93,6 +103,9 @@ def main() -> int:
         "select authority_id, fiscal_year, actual_audited, fare_revenue, "
         "unlinked_trips, rta_kind, rta_amount, farebox_recovery from gold_funding"
     ).fetchall()
+    vacancy = con.execute(
+        "select authority_id, as_of, open_postings, source_url, method from gold_vacancy"
+    ).fetchall()
     con.close()
 
     with psycopg.connect(db_url) as pg:
@@ -101,10 +114,12 @@ def main() -> int:
             cur.executemany(STOP_UPSERT, stops)
             cur.executemany(HEX_UPSERT, hexes)
             cur.executemany(FINANCE_UPSERT, finances)
+            cur.executemany(VACANCY_UPSERT, vacancy)
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
-          f"{len(hexes)} hex cells, {len(finances)} finance rows → Project A")
+          f"{len(hexes)} hex cells, {len(finances)} finance rows, "
+          f"{len(vacancy)} vacancy rows → Project A")
     return 0
 
 
