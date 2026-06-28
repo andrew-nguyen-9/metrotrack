@@ -16,7 +16,7 @@ awaiting human) · `done`.
 
 | Segment | What | Status | PR | Notes |
 |---|---|---|---|---|
-| v2.0 | Multi-tenant foundation | pending | — | unblocks all; Chicago golden test |
+| v2.0 | Multi-tenant foundation | in-progress | — | v2.0.1 done (metros registry); resume v2.0.2 → metro_id backfill |
 | v2.1 | Site shell, pages & SEO | pending | — | needs v2.0 |
 | v2.2 | RSS / regional feeds | pending | — | needs v2.0 |
 | v2.3 | Metro onboarding: **SF** | pending | — | first add-a-metro; needs v2.1 |
