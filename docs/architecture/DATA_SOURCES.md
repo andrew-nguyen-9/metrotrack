@@ -8,6 +8,8 @@ the primary source — do not publish second-hand current-events claims.
 |---|---|---|---|---|---|---|
 | Chicago Data Portal (Socrata) | funding, mapping | ridership, L-station entries, headcounts, shapefiles | none / app token (optional) | nightly | TBD | ☐ |
 | RTAMS | funding | CTA/Pace/Metra financials, capital projects, ridership history | none | monthly | TBD | ☐ |
+| FTA **National Transit Database** — Annual Data View, Metrics (by Agency) (DOT Socrata `g27i-aq2u`) | funding | **actual** audited operating expense, fare revenue, unlinked trips by agency × year (CTA/Metra/Pace subset) | **none** (key-free Socrata JSON/CSV) | annual | public domain (US Gov) | ☐ (v1.2.2) |
+| **RTA adopted Operating Budget** (budget book / quarterly financial report, PDF) | funding | **budgeted** operating expense by service board × year | none | annual | public record | ☐ (v1.2.2 — transcribed w/ citation in `data/bronze/rta/SOURCE.md`; **PDF-only, no structured export**) |
 | GTFS static (CTA, Pace, Metra) | mapping | routes, stops, schedules | none | weekly | TBD | ☐ |
 | GTFS-realtime (CTA Bus/Train Tracker, Pace) | mapping | live positions, headways → usage | API key (free) | live / sampled | TBD | ☐ |
 | US Census LEHD **LODES8** (WAC `S000 JT00`) | mapping | block-level jobs (workplace), `C000` total | **none** (key-free `.csv.gz`) | annual | public domain | ☐ |
