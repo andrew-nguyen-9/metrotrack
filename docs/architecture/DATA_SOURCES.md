@@ -18,7 +18,7 @@ the primary source — do not publish second-hand current-events claims.
 | Overpass / OpenStreetMap | mapping | POIs: shops, airports, attractions, venues | none | monthly | ODbL (attribution req.) | ☐ |
 | Authority career pages — **CTA** `chicagotransit.taleo.net` (Taleo), **Metra** `cta.cadienttalent.com` (Cadient, `MetraKTMDReqExt`), **Pace** `pacebus.com/careers` (Drupal) | hiring | open job postings (count) per authority, weekly snapshot | none (polite scrape) | weekly | site ToS — robots: CTA `/careers/` allowed, Pace `/careers` allowed, Metra 403 to generic clients (public ATS used) | ☐ (v1.3.2; rendered listing saved as receipt) |
 | NITA / state legislation | funding, vision | governance, the funding reallocation figures | none | as published | public record | ☐ |
-| openrouteservice | mapping (access) | walk/street routing + isochrones | API key (free) | on-demand + nightly precompute | ORS terms | ☐ |
+| openrouteservice | mapping (access) | walk/street routing + isochrones | API key (free, env `ORS_API_KEY`) | on-demand + nightly precompute | ORS terms | ☐ (v1.4: loader built + tested vs committed sample; **no key configured**, so the published ambient access metric is a straight-line walkshed — ORS network isochrones activate when `ORS_API_KEY` is set) |
 | Agency delivered-service reports | hiring | actual vs scheduled service (reconcile w/ GTFS-rt, G6) | none | as published | public record | ☐ |
 | Divvy (GBFS) | mapping (v2) | bikeshare stations, first/last-mile | none | live | Lyft/NABSA terms | ☐ |
 
