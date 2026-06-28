@@ -41,6 +41,7 @@ and (at close) an archive. Current: [`phases/v1/PHASES_OVERVIEW.md`](phases/v1/P
 ## Brainstorming (what might come next)
 
 - [`brainstorming/v1-ideas.md`](brainstorming/v1-ideas.md) — the seed backlog + candidate v2+ features.
+- [`brainstorming/v2-ideas.md`](brainstorming/v2-ideas.md) — next-cycle backlog, seeded at v1 close.
 - [`brainstorming/DESIGN_QUESTIONNAIRE.md`](brainstorming/DESIGN_QUESTIONNAIRE.md) — front-loaded MCQs to lock design/scope/modeling before build. Answers graduate into phases + design-system + ADRs.
 
 ## Conventions for this folder
