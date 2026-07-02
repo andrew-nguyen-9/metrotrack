@@ -62,6 +62,7 @@ select
     rb.short_name,
     rb.long_name,
     rb.route_type,
+    {{ route_mode('rb.route_type') }} as mode,
     rb.color,
     rb.text_color,
     st_collect(list(sl.geom) filter (where sl.geom is not null)) as geom

@@ -6,7 +6,7 @@ version: 2
 # without dbt_utils, which this project deliberately doesn't vendor).
 models:
   - name: silver_stops
-    description: Typed, deduped, validated GTFS stops — one point per (metro, authority, stop_id) (SRID 4326).
+    description: Typed, deduped, validated GTFS stops — one point per (metro, authority, stop_id) (SRID 4326). mode = the agency's route modes (multi for a multi-mode operator like CTA).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -14,8 +14,13 @@ models:
         tests: [not_null]
       - name: stop_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'multi', 'other']
   - name: silver_routes
-    description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326).
+    description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326). mode = route_type normalized to bus/rail/commuter-rail (macro route_mode).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -23,6 +28,11 @@ models:
         tests: [not_null]
       - name: route_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'other']
   - name: silver_hex_metrics
     description: Jobs + population aggregated to H3 cells (res = h3_res var). One row per (metro, hex).
     columns:

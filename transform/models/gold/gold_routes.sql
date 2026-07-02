@@ -7,6 +7,7 @@ select
     short_name,
     long_name,
     route_type,
+    mode,
     color,
     text_color,
     st_astext(geom) as geom_wkt

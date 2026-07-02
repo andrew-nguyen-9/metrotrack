@@ -5,5 +5,6 @@ select
     authority_id,
     stop_id,
     name,
+    mode,
     st_astext(geom) as geom_wkt
 from {{ ref('silver_stops') }}
