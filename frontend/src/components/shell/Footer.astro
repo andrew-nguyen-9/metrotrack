@@ -14,10 +14,14 @@ const links = metro
       { href: `/${metro.slug}/hiring`, label: "Hiring" },
       { href: `/${metro.slug}/job-access`, label: "Job access" },
       { href: `/${metro.slug}/articles`, label: "Articles" },
+      { href: "/methodology", label: "Methodology" },
+      { href: "/about", label: "About" },
     ]
   : [
       { href: "/", label: "All metros" },
       { href: "/articles", label: "Articles" },
+      { href: "/methodology", label: "Methodology" },
+      { href: "/about", label: "About" },
       ...liveMetros().map((m) => ({ href: `/${m.slug}`, label: m.name })),
     ];
 ---
