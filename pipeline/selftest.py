@@ -147,16 +147,40 @@ def main() -> int:
 
     routes_b, ids = gtfs.subset_routes(b"route_id,route_short_name\nA,1\nB,2\nC,3\n", 2)
     assert ids == {"A", "B"} and routes_b.count(b"\n") == 3  # header + 2 rows
-    passed.append("subset_routes keeps first N + their ids")
+    passed.append("subset_routes keeps first N + their ids (no route_type → flat)")
+
+    # Stratify by route_type so every mode a feed carries survives the sample — a flat
+    # head slice would drop CTA rail (bus routes are listed before the 'L' lines).
+    strat_b, strat_ids = gtfs.subset_routes(
+        b"route_id,route_type\nB1,3\nB2,3\nB3,3\nR1,1\nR2,1\n", 2)
+    assert strat_ids == {"B1", "B2", "R1", "R2"}, strat_ids  # 2 bus + 2 rail, B3 dropped
+    passed.append("subset_routes stratifies by route_type (keeps every mode)")
 
     trips = b"route_id,shape_id\nA,sA1\nA,sA1\nA,sA2\nA,sA3\nB,sB1\nC,sC1\n"
-    _, shape_ids = gtfs.subset_trips(trips, {"A", "B"}, max_shapes_per_route=2)
+    _, shape_ids, _ = gtfs.subset_trips(trips, {"A", "B"}, max_shapes_per_route=2)
     assert shape_ids == {"sA1", "sA2", "sB1"}, shape_ids  # A capped at 2 shapes, C dropped
     passed.append("subset_trips caps shapes/route + collects shape_ids")
 
-    _, no_shapes = gtfs.subset_trips(b"route_id,trip_id\nA,1\nA,2\nB,3\n", {"A", "B"})
-    assert no_shapes == set()
-    passed.append("subset_trips tolerates trips.txt without shape_id")
+    # trip_ids of the kept rows drive route-coherent stop sampling.
+    trips_id = b"route_id,trip_id,shape_id\nA,t1,sA1\nA,t2,sA1\nA,t3,sA2\nB,t4,sB1\n"
+    _, _, trip_ids = gtfs.subset_trips(trips_id, {"A", "B"}, max_shapes_per_route=2)
+    assert trip_ids == {"t1", "t3", "t4"}, trip_ids  # one trip per kept shape
+    passed.append("subset_trips returns the kept trip_ids")
+
+    _, no_shapes, no_shape_trips = gtfs.subset_trips(b"route_id,trip_id\nA,1\nA,2\nB,3\n", {"A", "B"})
+    assert no_shapes == set() and no_shape_trips == {"1", "3"}  # one trip/route, ids kept
+    passed.append("subset_trips tolerates trips.txt without shape_id (still yields trip_ids)")
+
+    # stop_times → the stops those trips visit (strips space-padding like Metra's).
+    stop_times = b"trip_id,stop_id,stop_sequence\nt1,s1,1\nt1, s2 ,2\nt4,s9,1\ntX,s99,1\n"
+    assert gtfs.stop_ids_for_trips(stop_times, {"t1", "t4"}) == {"s1", "s2", "s9"}
+    assert gtfs.stop_ids_for_trips(stop_times, set()) == set()  # no trips → no stops
+    passed.append("stop_ids_for_trips collects the stops of the kept trips (route-coherent)")
+
+    assert gtfs.subset_stops_by_id(
+        b"stop_id,stop_name\ns1,A\ns2,B\ns3,C\n", {"s1", "s3"}
+    ) == b"stop_id,stop_name\ns1,A\ns3,C\n"
+    passed.append("subset_stops_by_id keeps only the referenced stops")
 
     shapes = b"shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\nsA1,1,2,1\nsA1,1,3,2\nsZ,0,0,1\n"
     assert gtfs.subset_shapes(shapes, {"sA1"}).count(b"\n") == 3  # header + 2 sA1 rows

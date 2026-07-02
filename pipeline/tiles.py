@@ -76,24 +76,24 @@ def export(metro) -> None:
     routes = _features(
         con,
         """
-        select authority_id, route_id, short_name, long_name, route_type, color,
+        select authority_id, route_id, short_name, long_name, route_type, mode, color,
                ST_AsGeoJSON(geom) as g
         from silver_routes
         where metro_id = ? and geom is not null and not st_isempty(geom)
         order by authority_id, route_id
         """,
-        ["authority_id", "route_id", "short_name", "long_name", "route_type", "color"],
+        ["authority_id", "route_id", "short_name", "long_name", "route_type", "mode", "color"],
         [slug],
     )
     stops = _features(
         con,
         """
-        select authority_id, stop_id, name, ST_AsGeoJSON(geom) as g
+        select authority_id, stop_id, name, mode, ST_AsGeoJSON(geom) as g
         from silver_stops
         where metro_id = ?
         order by authority_id, stop_id
         """,
-        ["authority_id", "stop_id", "name"],
+        ["authority_id", "stop_id", "name", "mode"],
         [slug],
     )
     # Hex choropleth: jobs + population per H3 cell. Geometry is stored as WKT in

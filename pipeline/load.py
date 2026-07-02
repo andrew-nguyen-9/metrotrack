@@ -50,16 +50,17 @@ on conflict (metro_id) do update set
 
 ROUTE_UPSERT = """
 insert into public.routes
-  (metro_id, authority_id, route_id, short_name, long_name, route_type,
+  (metro_id, authority_id, route_id, short_name, long_name, route_type, mode,
    color, text_color, geom, as_of)
 -- ST_Multi: a route with a single shape stitches to a LINESTRING, which the
 -- MultiLineString column would reject; coerce it to MULTILINESTRING.
-values (%s, %s, %s, %s, %s, %s, %s, %s,
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s,
         extensions.ST_Multi(extensions.ST_GeomFromText(%s, 4326)), %s)
 on conflict (metro_id, authority_id, route_id) do update set
   short_name = excluded.short_name,
   long_name  = excluded.long_name,
   route_type = excluded.route_type,
+  mode       = excluded.mode,
   color      = excluded.color,
   text_color = excluded.text_color,
   geom       = excluded.geom,
@@ -67,10 +68,11 @@ on conflict (metro_id, authority_id, route_id) do update set
 """
 
 STOP_UPSERT = """
-insert into public.stops (metro_id, authority_id, stop_id, name, geom, as_of)
-values (%s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+insert into public.stops (metro_id, authority_id, stop_id, name, mode, geom, as_of)
+values (%s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
 on conflict (metro_id, authority_id, stop_id) do update set
   name  = excluded.name,
+  mode  = excluded.mode,
   geom  = excluded.geom,
   as_of = excluded.as_of
 """
@@ -217,10 +219,10 @@ def main() -> int:
     con = duckdb.connect(str(DUCKDB), read_only=True)
     routes = con.execute(
         "select metro_id, authority_id, route_id, short_name, long_name, route_type, "
-        "color, text_color, geom_wkt from gold_routes"
+        "mode, color, text_color, geom_wkt from gold_routes"
     ).fetchall()
     stops = con.execute(
-        "select metro_id, authority_id, stop_id, name, geom_wkt from gold_stops"
+        "select metro_id, authority_id, stop_id, name, mode, geom_wkt from gold_stops"
     ).fetchall()
     hexes = con.execute(
         "select metro_id, h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
