@@ -1,11 +1,18 @@
 ---
-import Base from "../../layouts/Base.astro";
-import FundingChart from "../../components/FundingChart.tsx";
-import { type Metro, metroPaths, fundingData } from "../../lib/metros";
+import Base from "@/layouts/Base.astro";
+import FundingChart from "@/components/FundingChart.tsx";
+import FundingTrendChart from "@/components/FundingTrendChart.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import { type Metro, metroPaths, fundingData } from "@/lib/metros";
 import {
-  authorityLabel, fmtUSD, fmtPct, authorities, rowsFor,
-  RTA_KIND_LABELS, SERIES_LABELS, type FundingData,
-} from "../../lib/funding";
+  authorityLabel, fmtUSD, fmtPct, fmtUSD2, authorities, rowsFor, trendYears,
+  RTA_KIND_LABELS, SERIES_LABELS, TREND_METRICS, type FundingData,
+} from "@/lib/funding";
 
 export const getStaticPaths = metroPaths;
 
@@ -13,100 +20,231 @@ const { metro } = Astro.props as { metro: Metro };
 const data = fundingData(metro.slug) as FundingData;
 const auths = authorities(data.rows);
 const sources = data.sources;
+const years = trendYears(data.rows);
+const latestYear = years[years.length - 1];
+
+// Headline readout: each board's latest-year farebox recovery + change vs the prior
+// NTD year. Up = a larger share of operating cost covered by fares (toward
+// self-sufficiency), so we tone it pos; down = neg. This is a cost-recovery signal,
+// NOT a value judgement on the agency — a fare hike also raises it (see the caveat
+// below). All three figures come from the same NTD receipt.
+const headline = auths.map((a) => {
+  const rs = rowsFor(data.rows, a).filter((r) => r.farebox_recovery != null);
+  const last = rs[rs.length - 1];
+  const prev = rs[rs.length - 2];
+  const diff = last && prev && last.farebox_recovery != null && prev.farebox_recovery != null
+    ? last.farebox_recovery - prev.farebox_recovery : null;
+  return {
+    label: authorityLabel(a),
+    value: last?.farebox_recovery != null ? fmtPct(last.farebox_recovery) : "—",
+    asOf: last ? `FY${last.fiscal_year}` : undefined,
+    delta: diff != null && Math.abs(diff) >= 0.0005
+      ? {
+          value: `${diff > 0 ? "+" : ""}${(diff * 100).toFixed(1)} pts vs prior FY`,
+          dir: diff > 0 ? "up" as const : "down" as const,
+          tone: diff > 0 ? "pos" as const : "neg" as const,
+        }
+      : undefined,
+  };
+});
 ---
 
 <Base metro={metro} title={`Funding — MetroTrack ${metro.name}`}>
-  <section class="max-w-2xl">
-    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
-      Where the money goes
-    </h1>
-    <p class="mt-4 text-text-muted text-lg">
-      Operating spending for the three service boards — audited actuals against the
-      RTA's adopted budget and forward plan. Every figure shows its source and&nbsp;<span class="tabular">as-of</span> date.
-    </p>
-  </section>
-
-  <section class="mt-10" aria-labelledby="chart-heading">
-    <h2 id="chart-heading" class="text-xl font-medium">
-      Operating budget vs. actual, by service board
-    </h2>
-    <p class="mt-1 text-sm text-text-muted max-w-3xl">
-      <strong>Actual</strong> = audited operating expense (FTA National Transit
-      Database). <strong>RTA budget / plan</strong> = the RTA's adopted figure for
-      each year, labeled by its true nature (actual, estimate, adopted budget, or
-      forward plan). The two series come from different sources defined slightly
-      differently, so they are shown side by side, never merged — for CTA and Metra
-      they track within ~2%; Pace's gap is larger because its figure folds in Regional
-      ADA Paratransit. The 2026–2027 plan years show the projected{" "}
-      <a class="underline" href={sources.rta.url} target="_blank" rel="noopener">fiscal-cliff</a>{" "}
-      trajectory.
-    </p>
-
-    <div class="mt-4 rounded-lg border border-hairline bg-surface p-4">
-      <FundingChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
-    </div>
-
-    <p class="mt-2 text-xs text-text-muted">
-      Sources: <a class="underline" href={sources.actual.url} target="_blank" rel="noopener">{sources.actual.label}</a>
-      ({sources.actual.asOf}) · <a class="underline" href={sources.rta.url} target="_blank" rel="noopener">{sources.rta.label}</a>
-      ({sources.rta.asOf}).
-    </p>
-
-    <!-- Accessible, no-JS fallback: the chart is an enhancement; this table carries
-         the same numbers with the series named (not color-coded). -->
-    <details class="mt-4 rounded-lg border border-hairline bg-surface" open>
-      <summary class="cursor-pointer px-4 py-3 font-medium">
-        Budget &amp; actual data (table)
-      </summary>
-      <div class="overflow-x-auto px-4 pb-4">
-        <table class="w-full text-left text-sm">
-          <caption class="sr-only">
-            Audited actual operating expense and RTA budget/plan figures by service board and fiscal year
-          </caption>
-          <thead>
-            <tr class="border-b border-hairline text-text-muted">
-              <th scope="col" class="py-2 pr-4 font-medium">Fiscal year</th>
-              <th scope="col" class="py-2 pr-4 font-medium">{SERIES_LABELS.actual}</th>
-              <th scope="col" class="py-2 pr-4 font-medium">{SERIES_LABELS.rta}</th>
-              <th scope="col" class="py-2 font-medium">Farebox recovery</th>
-            </tr>
-          </thead>
-          <tbody>
-            {auths.map((a) => (
-              <>
-                <tr class="border-b border-hairline/60">
-                  <th scope="rowgroup" colspan="4" class="pt-4 pb-1 text-text">
-                    {authorityLabel(a)}
-                  </th>
-                </tr>
-                {rowsFor(data.rows, a).map((r) => (
-                  <tr class="border-b border-hairline/40">
-                    <td class="py-1.5 pr-4 tabular">{r.fiscal_year}</td>
-                    <td class="py-1.5 pr-4 tabular">
-                      {r.actual_audited == null ? "—" : fmtUSD(r.actual_audited)}
-                    </td>
-                    <td class="py-1.5 pr-4 tabular">
-                      {r.rta_amount == null ? "—" : fmtUSD(r.rta_amount)}
-                      {r.rta_kind && (
-                        <span class="ml-1 text-text-muted font-normal">
-                          ({RTA_KIND_LABELS[r.rta_kind] ?? r.rta_kind})
-                        </span>
-                      )}
-                    </td>
-                    <td class="py-1.5 tabular">
-                      {r.farebox_recovery == null ? "—" : fmtPct(r.farebox_recovery)}
-                    </td>
-                  </tr>
-                ))}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p class="px-4 pb-4 text-xs text-text-muted">
-        Pace includes Regional ADA Paratransit, which Pace operates. Farebox recovery
-        = fare revenue ÷ audited operating expense (FTA NTD).
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Where the money goes
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Operating spending for the three service boards — audited actuals against the
+        RTA's adopted budget and forward plan, plus how efficiently each fare dollar and
+        subsidy dollar turns into rides. Every figure shows its source and&nbsp;<span class="tabular">as-of</span> date.
       </p>
-    </details>
-  </section>
+    </Stack>
+
+    {latestYear && (
+      <Stack gap="sm" as="section" aria-labelledby="headline-heading">
+        <h2 id="headline-heading" class="text-[length:var(--text-lg)] font-medium">
+          Farebox recovery, latest audited year (FY{latestYear})
+        </h2>
+        <StatBand aria-label="Latest farebox recovery by service board">
+          {headline.map((s) => (
+            <Card>
+              <Stat value={s.value} label={`${s.label} — farebox recovery`} hint={s.asOf ? `as of ${s.asOf}` : undefined} delta={s.delta} />
+            </Card>
+          ))}
+        </StatBand>
+        <SourceTag
+          source={sources.actual.label}
+          id="funding-ntd-ratios"
+          asOf={sources.actual.asOf}
+          href={sources.actual.url}
+          note="farebox recovery = fare revenue ÷ audited operating expense (NTD-internal ratio)"
+        />
+      </Stack>
+    )}
+
+    <Stack gap="md" as="section" aria-labelledby="chart-heading">
+      <h2 id="chart-heading" class="text-[length:var(--text-lg)] font-medium">
+        Operating budget vs. actual, by service board
+      </h2>
+      <p class="text-sm text-text-muted max-w-[var(--measure)]">
+        <strong>Actual</strong> = audited operating expense (FTA National Transit
+        Database). <strong>RTA budget / plan</strong> = the RTA's adopted figure for
+        each year, labeled by its true nature (actual, estimate, adopted budget, or
+        forward plan). The two series come from different sources defined slightly
+        differently, so they are shown side by side, never merged — for CTA and Metra
+        they track within ~2%; Pace's gap is larger because its figure folds in Regional
+        ADA Paratransit. The 2026–2027 plan years show the projected{" "}
+        <a class="underline" href={sources.rta.url} target="_blank" rel="noopener">fiscal-cliff</a>{" "}
+        trajectory.
+      </p>
+
+      <Card>
+        <FundingChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
+      </Card>
+
+      <SourceTag source={sources.actual.label} id="funding-ntd" asOf={sources.actual.asOf} href={sources.actual.url} />
+      <SourceTag source={sources.rta.label} id="funding-rta" asOf={sources.rta.asOf} href={sources.rta.url} />
+
+      <!-- Accessible, no-JS fallback: the chart is an enhancement; this table carries
+           the same numbers with the series named (not color-coded). -->
+      <details class="rounded-lg border border-hairline bg-surface" open>
+        <summary class="cursor-pointer px-4 py-3 font-medium">
+          Budget &amp; actual data (table)
+        </summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">
+              Audited actual operating expense and RTA budget/plan figures by service board and fiscal year
+            </caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Fiscal year</th>
+                <th scope="col" class="py-2 pr-4 font-medium">{SERIES_LABELS.actual}</th>
+                <th scope="col" class="py-2 pr-4 font-medium">{SERIES_LABELS.rta}</th>
+                <th scope="col" class="py-2 font-medium">Farebox recovery</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auths.map((a) => (
+                <>
+                  <tr class="border-b border-hairline/60">
+                    <th scope="rowgroup" colspan="4" class="pt-4 pb-1 text-text">
+                      {authorityLabel(a)}
+                    </th>
+                  </tr>
+                  {rowsFor(data.rows, a).map((r) => (
+                    <tr class="border-b border-hairline/40">
+                      <td class="py-1.5 pr-4 tabular">{r.fiscal_year}</td>
+                      <td class="py-1.5 pr-4 tabular">
+                        {r.actual_audited == null ? "—" : fmtUSD(r.actual_audited)}
+                      </td>
+                      <td class="py-1.5 pr-4 tabular">
+                        {r.rta_amount == null ? "—" : fmtUSD(r.rta_amount)}
+                        {r.rta_kind && (
+                          <span class="ml-1 text-text-muted font-normal">
+                            ({RTA_KIND_LABELS[r.rta_kind] ?? r.rta_kind})
+                          </span>
+                        )}
+                      </td>
+                      <td class="py-1.5 tabular">
+                        {r.farebox_recovery == null ? "—" : fmtPct(r.farebox_recovery)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-xs text-text-muted">
+          Pace includes Regional ADA Paratransit, which Pace operates. Farebox recovery
+          = fare revenue ÷ audited operating expense (FTA NTD).
+        </p>
+      </details>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="trend-heading">
+      <h2 id="trend-heading" class="text-[length:var(--text-lg)] font-medium">
+        Efficiency trends: what a fare dollar and a subsidy dollar buy
+      </h2>
+
+      <Callout title="How to read these">
+        Three ratios, all computed from the same FTA National Transit Database receipt —
+        no source mixing. <strong>Farebox recovery</strong> = fare revenue ÷ operating
+        expense. <strong>Subsidy per rider</strong> = (operating expense − fare revenue) ÷
+        unlinked trips — the public dollars each boarding costs after fares.
+        <strong>Cost per rider</strong> = operating expense ÷ unlinked trips. These describe
+        <em>cost recovery</em>, not agency merit: recovery rises when fares go up
+        <em>or</em> ridership recovers, and Metra's and Pace's higher per-rider figures
+        reflect long commuter trips and ADA paratransit, not waste. Compare a board to
+        its own past, not to another mode.
+      </Callout>
+
+      <Card>
+        <FundingTrendChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
+      </Card>
+
+      <SourceTag
+        source={sources.actual.label}
+        id="funding-ntd-ratios"
+        asOf={sources.actual.asOf}
+        href={sources.actual.url}
+        note="all three ratios derive from NTD fare revenue, operating expense, and unlinked trips"
+      />
+
+      <!-- No-JS fallback: exact efficiency figures per board × year. -->
+      <details class="rounded-lg border border-hairline bg-surface" open>
+        <summary class="cursor-pointer px-4 py-3 font-medium">
+          Efficiency data (table)
+        </summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">
+              Farebox recovery, subsidy per rider, and cost per rider by service board and fiscal year, from the FTA National Transit Database
+            </caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Fiscal year</th>
+                <th scope="col" class="py-2 pr-4 font-medium">{TREND_METRICS.farebox_recovery.label}</th>
+                <th scope="col" class="py-2 pr-4 font-medium">{TREND_METRICS.subsidy_per_rider.label}</th>
+                <th scope="col" class="py-2 font-medium">{TREND_METRICS.cost_per_rider.label}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auths.map((a) => (
+                <>
+                  <tr class="border-b border-hairline/60">
+                    <th scope="rowgroup" colspan="4" class="pt-4 pb-1 text-text">
+                      {authorityLabel(a)}
+                    </th>
+                  </tr>
+                  {rowsFor(data.rows, a).filter((r) => r.actual_audited != null).map((r) => (
+                    <tr class="border-b border-hairline/40">
+                      <td class="py-1.5 pr-4 tabular">{r.fiscal_year}</td>
+                      <td class="py-1.5 pr-4 tabular">
+                        {r.farebox_recovery == null ? "—" : fmtPct(r.farebox_recovery)}
+                      </td>
+                      <td class="py-1.5 pr-4 tabular">
+                        {r.subsidy_per_rider == null ? "—" : fmtUSD2(r.subsidy_per_rider)}
+                      </td>
+                      <td class="py-1.5 tabular">
+                        {r.cost_per_rider == null ? "—" : fmtUSD2(r.cost_per_rider)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-xs text-text-muted">
+          Subsidy per rider = (operating expense − fare revenue) ÷ unlinked passenger
+          trips. Cost per rider = operating expense ÷ unlinked trips. Pace includes
+          Regional ADA Paratransit. Source: FTA National Transit Database.
+        </p>
+      </details>
+    </Stack>
+  </Stack>
 </Base>

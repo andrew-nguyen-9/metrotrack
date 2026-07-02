@@ -46,7 +46,11 @@ models:
       - name: geom_wkt
         tests: [not_null]
   - name: gold_funding
-    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per metro × authority × year.
+    description: >
+      Funding shaped for the spine + funding.json export — operating actual (NTD) vs
+      RTA budget/plan plus four NTD-internal efficiency ratios (farebox recovery,
+      subsidy, subsidy_per_rider, cost_per_rider), per metro × authority × year.
+      Ratio bounds asserted by tests/assert_gold_funding_ratios.sql.
     columns:
       - name: metro_id
         tests: [not_null]
