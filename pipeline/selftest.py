@@ -28,6 +28,7 @@ import hiring
 import load
 import metros
 import psycopg.conninfo
+import ridership
 
 _ALL_SOURCES = ["cta", "metra", "pace", "census", "ntd", "rta", "hiring"]
 _TODAY = date(2026, 6, 28)
@@ -288,6 +289,28 @@ def main() -> int:
     assert [r["value_s"] for r in sample] == [900, 1800, 2700], sample
     passed.append("isochrone sample fixture parses to 15/30/45-min rings")
 
+    # Ridership: CTA bus-route + 'L'-station monthly parse — one row per record,
+    # month truncated to a date, monthtotal → int, empty keys dropped.
+    bus = ridership.parse_bus(json.dumps([
+        {"route": "9", "routename": "Ashland", "month_beginning": "2026-04-01T00:00:00.000",
+         "avg_weekday_rides": "20481.3", "monthtotal": "545231"},
+        {"route": "", "routename": "junk", "month_beginning": "2026-04-01T00:00:00.000",
+         "monthtotal": "1"},  # no route id → dropped
+    ]).encode())
+    brows = bus.decode().splitlines()
+    assert brows[0] == "authority_id,route,route_name,month,rides", brows
+    assert brows[1] == "cta,9,Ashland,2026-04-01,545231" and len(brows) == 2, brows
+    passed.append("parse_bus keeps one row per route×month, drops rows with no route")
+
+    rail = ridership.parse_rail(json.dumps([
+        {"station_id": "40380", "stationame": "Clark/Lake", "month_beginning": "2026-04-01T00:00:00.000",
+         "monthtotal": "612345.0"},  # decimal tolerated
+    ]).encode())
+    rrows = rail.decode().splitlines()
+    assert rrows[0] == "authority_id,station_id,station_name,month,rides", rrows
+    assert rrows[1] == "cta,40380,Clark/Lake,2026-04-01,612345" and len(rrows) == 2, rrows
+    passed.append("parse_rail keeps one row per station×month + tolerates decimals")
+
     # Metro registry: the real committed chicago.toml parses + validates, and the
     # invariants reject a bad slug / degenerate bbox / modeless agency. [v2.0.1]
     assert "chicago" in metros.list_metros()
@@ -345,7 +368,7 @@ def main() -> int:
     # a pass/fail dry-run struct (no-network: geo + config validity only). [H20a]
     entrypoints = {
         "gtfs": gtfs, "census": census, "funding": funding,
-        "hiring": hiring, "access": access,
+        "hiring": hiring, "access": access, "ridership": ridership,
     }
     for name, mod in entrypoints.items():
         report = mod.dry_run(chi_cfg, check_network=False)

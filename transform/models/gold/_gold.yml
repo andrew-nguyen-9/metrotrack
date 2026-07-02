@@ -62,3 +62,25 @@ models:
         tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_access_unique.sql
       - name: jobs_reachable_walk
         tests: [not_null]
+  - name: gold_ridership_line
+    description: CTA monthly bus-route ridership shaped for the ridership.json export (ridership by line).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: route
+        tests: [not_null]   # (metro,authority,route,month) uniqueness: tests/assert_gold_ridership_line_unique.sql
+      - name: month
+        tests: [not_null]
+  - name: gold_ridership_stop
+    description: CTA monthly 'L' station entries shaped for the ridership.json export (ridership by stop).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: station_id
+        tests: [not_null]   # (metro,authority,station,month) uniqueness: tests/assert_gold_ridership_stop_unique.sql
+      - name: month
+        tests: [not_null]

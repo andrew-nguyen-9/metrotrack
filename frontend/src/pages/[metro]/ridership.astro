@@ -1,0 +1,201 @@
+---
+import Base from "@/layouts/Base.astro";
+import RidershipChart from "@/components/RidershipChart.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, ridershipData } from "@/lib/metros";
+import { monthLabel, fmtInt, type RidershipData } from "@/lib/ridership";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = ridershipData(metro.slug) as RidershipData;
+
+const trend = data.trend;
+const latest = trend[trend.length - 1];
+const latestTotal = latest ? latest.bus + latest.rail : 0;
+const busiestRoute = data.byLine[0];
+const busiestStop = data.byStop[0];
+const latestLineMonth = monthLabel(data.latestMonth.line);
+const latestStopMonth = monthLabel(data.latestMonth.stop);
+
+// Top-N for the by-line chart; the table fallbacks carry the full lists.
+const topLines = data.byLine.slice(0, 12).map((r) => ({
+  label: r.route_name ? `${r.route} · ${r.route_name}` : r.route,
+  value: r.rides,
+}));
+
+const hasData = trend.length > 0;
+---
+
+<Base metro={metro} title={`Ridership — MetroTrack ${metro.name}`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Who's riding, month by month
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        CTA ridership — monthly boardings by bus line and entries by rail stop. The
+        pandemic dip and the uneven recovery are the story the trend tells. Every
+        figure shows its source and <span class="tabular">as-of</span> month.
+      </p>
+    </Stack>
+
+    {hasData && (
+      <StatBand aria-label="Latest-month ridership highlights">
+        <Card>
+          <Stat value={fmtInt(latestTotal)} label="CTA rides — latest month" hint={`bus + rail, ${latestLineMonth}`} />
+        </Card>
+        <Card>
+          <Stat value={busiestRoute ? fmtInt(busiestRoute.rides) : "—"} label="Busiest bus route"
+            hint={busiestRoute ? `#${busiestRoute.route} ${busiestRoute.route_name} · ${latestLineMonth}` : undefined} />
+        </Card>
+        <Card>
+          <Stat value={busiestStop ? fmtInt(busiestStop.rides) : "—"} label="Busiest 'L' station"
+            hint={busiestStop ? `${busiestStop.station_name} · ${latestStopMonth}` : undefined} />
+        </Card>
+      </StatBand>
+    )}
+
+    <!-- ── Trend: bus vs rail over time ─────────────────────────────────── -->
+    <Stack gap="md" as="section" aria-labelledby="trend-heading">
+      <h2 id="trend-heading" class="text-[length:var(--text-lg)] font-medium">Ridership over time</h2>
+      <Callout title="What this is">
+        Each line is CTA's own monthly total — <strong>bus boardings</strong> summed across
+        all routes, and <strong>rail entries</strong> summed across all 'L' stations. Bus and
+        rail count slightly differently (a boarding vs. a station entry), so they're shown as
+        two series, never added into one headline on the chart.
+      </Callout>
+
+      {hasData ? (
+        <Card>
+          <RidershipChart client:visible variant="trend" trend={trend} metro={metro.name} />
+        </Card>
+      ) : (
+        <DataState state="coming" title="No ridership yet" message="The monthly trend begins once the first ridership snapshot is ingested." />
+      )}
+
+      <SourceTag source={data.sources.line.label} id="ridership" href={data.sources.line.url}
+        asOf={latestLineMonth} note="Bus = boardings by route; rail = entries by station (Chicago Data Portal)." />
+
+      <details class="rounded-lg border border-hairline bg-surface">
+        <summary class="cursor-pointer px-4 py-3 font-medium">Monthly totals (table)</summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Monthly CTA bus boardings and rail entries</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Month</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Bus boardings</th>
+                <th scope="col" class="py-2 font-medium">Rail entries</th>
+              </tr>
+            </thead>
+            <tbody>
+              {trend.map((p) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4">{monthLabel(p.month)}</td>
+                  <td class="py-1.5 pr-4 tabular">{fmtInt(p.bus)}</td>
+                  <td class="py-1.5 tabular">{fmtInt(p.rail)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </Stack>
+
+    <!-- ── By line: busiest bus routes ──────────────────────────────────── -->
+    <Stack gap="md" as="section" aria-labelledby="line-heading">
+      <h2 id="line-heading" class="text-[length:var(--text-lg)] font-medium">Busiest bus routes (by line)</h2>
+      <p class="text-[length:var(--text-md)] text-text-muted max-w-[var(--measure)]">
+        Total boardings per route in {latestLineMonth}. A CTA bus route is a line.
+      </p>
+
+      {topLines.length > 0 ? (
+        <Card>
+          <RidershipChart client:visible variant="bar" bars={topLines} valueName="Monthly boardings"
+            ariaLabel={`The 12 busiest CTA bus routes by boardings in ${latestLineMonth}.`} />
+        </Card>
+      ) : (
+        <DataState state="coming" title="No route data yet" />
+      )}
+
+      <SourceTag source={data.sources.line.label} id="ridership" href={data.sources.line.url} asOf={latestLineMonth} note={data.sources.line.note} />
+
+      <details class="rounded-lg border border-hairline bg-surface">
+        <summary class="cursor-pointer px-4 py-3 font-medium">All routes, {latestLineMonth} (table)</summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">CTA bus routes ranked by monthly boardings</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Route</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Name</th>
+                <th scope="col" class="py-2 font-medium">Boardings</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.byLine.map((r) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4 tabular">{r.route}</td>
+                  <td class="py-1.5 pr-4">{r.route_name}</td>
+                  <td class="py-1.5 tabular">{fmtInt(r.rides)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </Stack>
+
+    <!-- ── By stop: busiest 'L' stations ────────────────────────────────── -->
+    <Stack gap="md" as="section" aria-labelledby="stop-heading">
+      <h2 id="stop-heading" class="text-[length:var(--text-lg)] font-medium">Busiest 'L' stations (by stop)</h2>
+      <p class="text-[length:var(--text-md)] text-text-muted max-w-[var(--measure)]">
+        Total station entries in {latestStopMonth}. An 'L' station is a stop.
+      </p>
+
+      {data.byStop.length > 0 ? (
+        <Card>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <caption class="sr-only">CTA 'L' stations ranked by monthly entries</caption>
+              <thead>
+                <tr class="border-b border-hairline text-text-muted">
+                  <th scope="col" class="py-2 pr-4 font-medium">#</th>
+                  <th scope="col" class="py-2 pr-4 font-medium">Station</th>
+                  <th scope="col" class="py-2 font-medium">Entries</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.byStop.map((s, i) => (
+                  <tr class="border-b border-hairline/40">
+                    <td class="py-1.5 pr-4 tabular text-text-muted">{i + 1}</td>
+                    <td class="py-1.5 pr-4">{s.station_name}</td>
+                    <td class="py-1.5 tabular">{fmtInt(s.rides)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      ) : (
+        <DataState state="coming" title="No station data yet" />
+      )}
+
+      <SourceTag source={data.sources.stop.label} id="ridership" href={data.sources.stop.url} asOf={latestStopMonth} note={data.sources.stop.note} />
+    </Stack>
+
+    <!-- ── Metra + Pace: honest scaffold (no free per-line/per-stop feed) ── -->
+    <Stack gap="md" as="section" aria-labelledby="other-heading">
+      <h2 id="other-heading" class="text-[length:var(--text-lg)] font-medium">Metra &amp; Pace ridership</h2>
+      <DataState state="coming" title="Metra + Pace ridership — data coming"
+        message="Metra and Pace publish granular ridership only in PDF monthly reports (no free per-line/per-stop feed), so per-line and per-stop numbers aren't shown here yet. Annual system totals for all three boards are on the Funding page (FTA National Transit Database)." />
+    </Stack>
+  </Stack>
+</Base>

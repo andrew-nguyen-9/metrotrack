@@ -54,3 +54,29 @@ models:
         tests: [not_null]
       - name: open_postings
         tests: [not_null]
+  - name: silver_ridership_line
+    description: CTA monthly bus-route ridership (a route = a line), typed + deduped. One row per metro × authority × route × month.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: route
+        tests: [not_null]   # (metro,authority,route,month) uniqueness: tests/assert_silver_ridership_line_unique.sql
+      - name: month
+        tests: [not_null]
+      - name: rides
+        tests: [not_null]
+  - name: silver_ridership_stop
+    description: CTA monthly 'L' station entries (a station = a stop), typed + deduped. One row per metro × authority × station × month.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: station_id
+        tests: [not_null]   # (metro,authority,station,month) uniqueness: tests/assert_silver_ridership_stop_unique.sql
+      - name: month
+        tests: [not_null]
+      - name: rides
+        tests: [not_null]
