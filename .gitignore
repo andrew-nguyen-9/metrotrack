@@ -47,4 +47,7 @@ data/bronze/*/cta_live/
 
 # OS
 .DS_Store
+
+# Agent working memory + QA scratch (session-local, not receipts)
 .orchestrator/
+.playwright-mcp/

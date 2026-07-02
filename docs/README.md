@@ -37,9 +37,11 @@ Alternatives):
 
 Each phase has a folder under [`phases/`](phases): overview, per-segment plans,
 and (at close) an archive. v1: [`phases/v1/PHASES_OVERVIEW.md`](phases/v1/PHASES_OVERVIEW.md)
-(✅ shipped). Current: [`phases/v2/PHASES_OVERVIEW.md`](phases/v2/PHASES_OVERVIEW.md)
-— multi-city, with an autonomous rollout loop ([`phases/v2/LOOP_PROMPT.md`](phases/v2/LOOP_PROMPT.md))
-driven off a progress ledger ([`phases/v2/PROGRESS.md`](phases/v2/PROGRESS.md)).
+(✅ shipped). v2: [`phases/v2/PHASES_OVERVIEW.md`](phases/v2/PHASES_OVERVIEW.md)
+— multi-city foundation + autonomous rollout loop. **Current (✅ shipped, `v3.0.0`):**
+[`phases/v3/PHASES_OVERVIEW.md`](phases/v3/PHASES_OVERVIEW.md) — the full public
+product, built by a multi-agent orchestrator ([`phases/v3/ARCHIVE.md`](phases/v3/ARCHIVE.md))
+with a landing ledger ([`phases/v3/PROGRESS.md`](phases/v3/PROGRESS.md)).
 
 ## Brainstorming (what might come next)
 

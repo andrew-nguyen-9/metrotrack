@@ -5,7 +5,7 @@ Brand + visual source files. The *written* design contract is in
 
 ## Logos
 
-Generated via Claude design (questionnaire B3). Source: `MetroTrack Logos.dc.html`
+Generated via Claude design (questionnaire B3). Source: `metrotrack-logos.dc.html`
 (open to re-edit). Exported SVGs in `logos/`, named `metrotrack-<city>-<format>.svg`.
 
 **Chosen variant: `chicago`** — launch scope is the Chicagoland/NITA region. Keep

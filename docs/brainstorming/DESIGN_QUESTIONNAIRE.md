@@ -57,7 +57,7 @@ c) Map-fragment motif  d) None for v1
 → Use the claude_design MCP (https://api.anthropic.com/v1/design/mcp, auth via /design-login) to import this project:
 https://claude.ai/design/p/7a106bc6-706f-4b06-90a7-60d2d2495471?file=MetroTrack+Logos.dc.html
 
-Implement: MetroTrack Logos.dc.html
+Implement: metrotrack-logos.dc.html
 
 **B4. Tagline?**
 a) Function-first ("Chicago transit, funded and mapped")  b) Mission ("Transit you can see")  c) None ⭐
