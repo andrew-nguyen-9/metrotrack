@@ -1,6 +1,6 @@
 ---
 import "../styles/globals.css";
-import { type Metro, defaultMetro } from "@/lib/metros";
+import type { Metro } from "@/lib/metros";
 import Nav from "@/components/shell/Nav.astro";
 import Toolbar from "@/components/shell/Toolbar.astro";
 import Footer from "@/components/shell/Footer.astro";
@@ -8,18 +8,25 @@ import Footer from "@/components/shell/Footer.astro";
 interface Props {
   title?: string;
   description?: string;
-  metro?: Metro;
+  metro?: Metro; // absent = the national homepage/directory (E2)
 }
 
-// Every page lives under a metro now; fall back to the default for safety.
-const { metro = defaultMetro(), title, description } = Astro.props;
+// Metro pages pass their metro; the national homepage passes none.
+const { metro, title, description } = Astro.props;
 
-const resolvedTitle = title ?? `MetroTrack — ${metro.region} Transit Tracker`;
+const resolvedTitle =
+  title ??
+  (metro
+    ? `MetroTrack — ${metro.region} Transit Tracker`
+    : "MetroTrack — Civic Transit Accountability");
 const resolvedDescription =
   description ??
-  `A neutral, public accountability tracker for ${metro.region} transit: funding, a usage map against population and jobs, hiring, and a job-access score.`;
+  (metro
+    ? `A neutral, public accountability tracker for ${metro.region} transit: funding, a usage map against population and jobs, hiring, and a job-access score.`
+    : "A neutral, public accountability tracker for U.S. transit: funding, a usage map against population and jobs, hiring, and a job-access score. Every figure shows its source.");
 
-const base = `/${metro.slug}`;
+const base = metro ? `/${metro.slug}` : "/";
+const logoLabel = metro ? `MetroTrack ${metro.name} home` : "MetroTrack home";
 const here = Astro.url.pathname.replace(/\/$/, "");
 
 const ogImage = new URL("/og.png", Astro.site).href;
@@ -62,8 +69,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
 
     <header class="border-b border-hairline">
       <div class="mx-auto flex max-w-[var(--measure-content)] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
-        <a href={base} class="shrink-0" aria-label={`MetroTrack ${metro.name} home`}>
-          <img src="/logo-wide.svg" alt={`MetroTrack ${metro.name}`} height="28" class="h-7 w-auto" />
+        <a href={base} class="shrink-0" aria-label={logoLabel}>
+          <img src="/logo-wide.svg" alt="MetroTrack" height="28" class="h-7 w-auto" />
         </a>
         <Nav metro={metro} here={here} />
         <div class="ml-auto"><Toolbar /></div>
