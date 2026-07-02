@@ -32,6 +32,10 @@ vars:
   # ~24 km/h ≈ a mixed urban transit trip; crow-flies distance ÷ this is a best-case
   # (floor) minute estimate, refined by ORS network routing when ORS_API_KEY is set.
   cbd_speed_kmh: 24
+  # Walkable transfer radius (metres) for the v3.7 cross-agency coordination scan
+  # (gold_stop_pairs). ~400 m ≈ a 5-min walk between stops. Override:
+  # `dbt build --vars '{pair_radius_m: 300}'`.
+  pair_radius_m: 400
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into
