@@ -1,0 +1,24 @@
+---
+// General articles index — every published piece, across all regions.
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import ArticleList from "@/components/ArticleList.astro";
+import { publishedArticles } from "@/lib/articles";
+
+const articles = await publishedArticles();
+---
+
+<Base title="Articles — MetroTrack" description="Editorial pieces on Chicagoland transit funding, service, and hiring — with sourcing.">
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Articles
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Context and analysis on transit funding, service, and hiring — every figure traces to a source.
+      </p>
+    </Stack>
+
+    <ArticleList articles={articles} showRegion={true} />
+  </Stack>
+</Base>

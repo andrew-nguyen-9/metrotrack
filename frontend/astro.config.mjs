@@ -2,6 +2,7 @@
 import { readFileSync } from "node:fs";
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
+import mdx from "@astrojs/mdx";
 import vercel from "@astrojs/vercel";
 import tailwindcss from "@tailwindcss/vite";
 
@@ -20,7 +21,7 @@ const defaultSlug = (metros.find((m) => m.status === "live") ?? metros[0]).slug;
 export default defineConfig({
   site: "https://transit.an9.dev",
   adapter: vercel(),
-  integrations: [react()],
+  integrations: [react(), mdx()],
   redirects: {
     "/": `/${defaultSlug}`,
   },

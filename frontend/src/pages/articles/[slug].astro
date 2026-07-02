@@ -1,0 +1,38 @@
+---
+// Article template — renders one MDX piece on the kit (prose styles). Articles are
+// cross-metro editorial, so the shell uses the default metro for its chrome.
+import { render } from "astro:content";
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import { publishedArticles, fmtDate } from "@/lib/articles";
+
+export async function getStaticPaths() {
+  const articles = await publishedArticles();
+  return articles.map((article) => ({ params: { slug: article.id }, props: { article } }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+const { title, date, summary, region } = article.data;
+---
+
+<Base title={`${title} — MetroTrack`} description={summary}>
+  <Stack gap="xl" class="mx-auto max-w-[var(--measure)]">
+    <Stack gap="sm" as="header">
+      <a href="/articles" class="text-sm text-text-muted hover:text-text">← All articles</a>
+      <h1 class="text-[length:var(--text-2xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        {title}
+      </h1>
+      <p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+        <time datetime={date.toISOString()}>{fmtDate(date)}</time>
+        <span aria-hidden="true">·</span>
+        <span>{region === "national" ? "Regional network" : region}</span>
+      </p>
+      <p class="text-[length:var(--text-md)] text-text-muted">{summary}</p>
+    </Stack>
+
+    <article class="prose">
+      <Content />
+    </article>
+  </Stack>
+</Base>

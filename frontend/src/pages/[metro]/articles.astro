@@ -1,0 +1,30 @@
+---
+// Region-filtered articles index — pieces scoped to this metro's region (plus
+// "national"). Reuses the same ArticleList as the general /articles index.
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import ArticleList from "@/components/ArticleList.astro";
+import { type Metro, metroPaths } from "@/lib/metros";
+import { publishedArticles, inRegion } from "@/lib/articles";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const articles = (await publishedArticles()).filter((a) => inRegion(a, metro.region));
+---
+
+<Base metro={metro} title={`Articles — MetroTrack ${metro.name}`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        {metro.region} articles
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Context and analysis for {metro.region} transit.
+        <a href="/articles" class="text-accent underline underline-offset-2">See all regions →</a>
+      </p>
+    </Stack>
+
+    <ArticleList articles={articles} />
+  </Stack>
+</Base>

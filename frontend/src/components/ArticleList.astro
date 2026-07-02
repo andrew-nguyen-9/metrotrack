@@ -1,0 +1,43 @@
+---
+// Shared list of article cards for the general + region-filtered indexes.
+// Renders the empty state itself so both indexes stay a single call.
+import Stack from "@/components/kit/Stack.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { fmtDate, type Article } from "@/lib/articles";
+
+interface Props {
+  articles: Article[];
+  showRegion?: boolean; // general index labels each piece's region; per-metro doesn't
+}
+const { articles, showRegion = false } = Astro.props;
+---
+
+{articles.length === 0 ? (
+  <DataState
+    state="empty"
+    title="No articles yet"
+    message="Editorial pieces on funding, service, and hiring will appear here as they're published."
+  />
+) : (
+  <Stack gap="md" as="ul" class="list-none">
+    {articles.map((a) => (
+      <li class="border-b border-hairline pb-6 last:border-0">
+        <a href={`/articles/${a.id}`} class="group block">
+          <h2 class="text-[length:var(--text-lg)] font-medium leading-[var(--leading-snug)] group-hover:text-accent">
+            {a.data.title}
+          </h2>
+          <p class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+            <time datetime={a.data.date.toISOString()}>{fmtDate(a.data.date)}</time>
+            {showRegion && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{a.data.region === "national" ? "Regional network" : a.data.region}</span>
+              </>
+            )}
+          </p>
+          <p class="mt-2 max-w-[var(--measure)] text-text-muted">{a.data.summary}</p>
+        </a>
+      </li>
+    ))}
+  </Stack>
+)}
