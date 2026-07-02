@@ -28,6 +28,14 @@ export const METROS: Metro[] = (metrosJson as Metro[]).map((m) => ({
 // `chicago` now). "soon" metros are listed but not yet routed.
 export const liveMetros = (): Metro[] => METROS.filter((m) => m.status === "live");
 
+// Placeholder regions on the national directory — greyed "coming soon" cards only.
+// Scope is LOCKED (E2): Chicago is the sole live metro; these 9 are directory
+// placeholders with NO TOML, NO pipeline, NO route (we never fake a data page).
+export const comingRegions: readonly string[] = [
+  "New York", "SF Bay Area", "Boston", "Washington, DC", "Los Angeles",
+  "Atlanta", "Seattle", "Philadelphia", "Dallas–Fort Worth",
+];
+
 export const getMetro = (slug: string): Metro => {
   const m = METROS.find((x) => x.slug === slug);
   if (!m) throw new Error(`unknown metro '${slug}' — not in metros.json`);

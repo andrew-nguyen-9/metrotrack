@@ -1,19 +1,23 @@
 ---
 // Global footer — attribution + links, and a button back to an9.dev (the parent
 // site). Reused on every page via Base.astro.
-import type { Metro } from "@/lib/metros";
+import { type Metro, liveMetros } from "@/lib/metros";
 
 interface Props {
-  metro: Metro;
+  metro?: Metro; // absent = national footer: link the live metros instead
 }
 const { metro } = Astro.props;
-const base = `/${metro.slug}`;
-const links = [
-  { href: `${base}/map`, label: "Map" },
-  { href: `${base}/funding`, label: "Funding" },
-  { href: `${base}/hiring`, label: "Hiring" },
-  { href: `${base}/job-access`, label: "Job access" },
-];
+const links = metro
+  ? [
+      { href: `/${metro.slug}/map`, label: "Map" },
+      { href: `/${metro.slug}/funding`, label: "Funding" },
+      { href: `/${metro.slug}/hiring`, label: "Hiring" },
+      { href: `/${metro.slug}/job-access`, label: "Job access" },
+    ]
+  : [
+      { href: "/", label: "All metros" },
+      ...liveMetros().map((m) => ({ href: `/${m.slug}`, label: m.name })),
+    ];
 ---
 
 <footer class="mt-auto border-t border-hairline text-text-muted">

@@ -1,21 +1,26 @@
 ---
 // Global primary nav — built from the active metro so links stay generic per
 // metro [B7a]. Keep the nav-from-metro pattern: pages pass their Metro.
-import type { Metro } from "@/lib/metros";
+import { type Metro, liveMetros } from "@/lib/metros";
 
 interface Props {
-  metro: Metro;
+  metro?: Metro; // absent = national homepage: link the live metros instead
   here: string; // current pathname, trailing slash stripped
 }
 const { metro, here } = Astro.props;
-const base = `/${metro.slug}`;
-const items = [
-  { href: base, label: "Overview" },
-  { href: `${base}/map`, label: "Map" },
-  { href: `${base}/funding`, label: "Funding" },
-  { href: `${base}/hiring`, label: "Hiring" },
-  { href: `${base}/job-access`, label: "Job access" },
-];
+// National nav (no metro): "Metros" home + each live metro. Per-metro nav otherwise.
+const items = metro
+  ? [
+      { href: `/${metro.slug}`, label: "Overview" },
+      { href: `/${metro.slug}/map`, label: "Map" },
+      { href: `/${metro.slug}/funding`, label: "Funding" },
+      { href: `/${metro.slug}/hiring`, label: "Hiring" },
+      { href: `/${metro.slug}/job-access`, label: "Job access" },
+    ]
+  : [
+      { href: "/", label: "Metros" },
+      ...liveMetros().map((m) => ({ href: `/${m.slug}`, label: m.name })),
+    ];
 ---
 
 <nav aria-label="Primary" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
