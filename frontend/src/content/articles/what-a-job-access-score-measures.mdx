@@ -1,0 +1,47 @@
+---
+title: "What a job-access score actually measures"
+date: 2026-06-30
+region: "national"
+summary: "A job-access score turns a map of transit into a single number: how many jobs a rider can reach in a fixed travel-time budget. Here's what it captures — and what it deliberately leaves out."
+draft: false
+---
+
+The signature metric on MetroTrack is a **job-access score**: for a given place,
+how many jobs can a rider reach within a fixed travel-time budget using transit
+and walking. It compresses a lot of geography into one comparable number, which
+is exactly why it's worth being precise about what it does and doesn't say.
+
+## The ingredients
+
+A job-access score is a spatial join of three layers:
+
+1. **Where jobs are** — employment counts by small geographic area.
+2. **Where people can get to** — travel-time areas (isochrones) computed from
+   transit schedules plus a short walk at each end.
+3. **The budget** — a fixed cutoff, commonly 45 minutes, that defines "reachable."
+
+Multiply reachable areas by the jobs inside them, sum, and you have the score.
+Change the budget and the number moves — a 30-minute score and a 60-minute score
+answer different questions.
+
+## What it captures well
+
+- **Network effect, not just proximity.** Living near a rail line only helps if
+  that line goes where the jobs are.
+- **Comparisons across places** under identical assumptions.
+- **Change over time** as service is added or cut.
+
+## What it deliberately omits
+
+A single number hides real texture, and honesty means naming the gaps:
+
+- It counts *jobs reachable*, not *jobs you'd want or qualify for*.
+- Schedule-based travel times assume the trip goes as timetabled; real-world
+  reliability is a separate measurement.
+- Off-peak and late-night access can differ sharply from the peak figure.
+
+> A good score tells you the door is open. It doesn't promise the trip is pleasant.
+
+When this metric ships, every score on the site will show its travel-time budget,
+the schedule date it was computed from, and a link to the underlying method — so
+the number is legible, not magic.

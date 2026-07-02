@@ -6,7 +6,7 @@ version: 2
 # without dbt_utils, which this project deliberately doesn't vendor).
 models:
   - name: silver_stops
-    description: Typed, deduped, validated GTFS stops — one point per (metro, authority, stop_id) (SRID 4326).
+    description: Typed, deduped, validated GTFS stops — one point per (metro, authority, stop_id) (SRID 4326). mode = the agency's route modes (multi for a multi-mode operator like CTA).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -14,8 +14,13 @@ models:
         tests: [not_null]
       - name: stop_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'multi', 'other']
   - name: silver_routes
-    description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326).
+    description: GTFS routes with geometry stitched from shapes (MultiLineString, SRID 4326). mode = route_type normalized to bus/rail/commuter-rail (macro route_mode).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -23,6 +28,11 @@ models:
         tests: [not_null]
       - name: route_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'other']
   - name: silver_hex_metrics
     description: Jobs + population aggregated to H3 cells (res = h3_res var). One row per (metro, hex).
     columns:
@@ -43,6 +53,23 @@ models:
         tests: [not_null]
       - name: fiscal_year
         tests: [not_null]
+  - name: silver_acs_change
+    description: Two ACS 5-year vintages joined per geography — population + median-income change. One row per (metro, geo_level, geoid).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: geo_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["tract", "county"]
+      - name: geoid
+        tests: [not_null]   # (metro_id, geo_level, geoid) uniqueness: tests/assert_silver_acs_unique.sql
+      - name: pop_prior
+        tests: [not_null]
+      - name: pop_latest
+        tests: [not_null]
   - name: silver_vacancy
     description: Weekly open-postings snapshots per service board (one row per metro × authority × date).
     columns:
@@ -53,4 +80,48 @@ models:
       - name: as_of
         tests: [not_null]
       - name: open_postings
+        tests: [not_null]
+  - name: silver_ridership_line
+    description: CTA monthly bus-route ridership (a route = a line), typed + deduped. One row per metro × authority × route × month.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: route
+        tests: [not_null]   # (metro,authority,route,month) uniqueness: tests/assert_silver_ridership_line_unique.sql
+      - name: month
+        tests: [not_null]
+      - name: rides
+        tests: [not_null]
+  - name: silver_ridership_stop
+    description: CTA monthly 'L' station entries (a station = a stop), typed + deduped. One row per metro × authority × station × month.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: station_id
+        tests: [not_null]   # (metro,authority,station,month) uniqueness: tests/assert_silver_ridership_stop_unique.sql
+      - name: month
+        tests: [not_null]
+      - name: rides
+        tests: [not_null]
+  - name: silver_cbds
+    description: Authored central-business-district anchors for the TOD time-to-CBD metric (data-driven, N per metro). One row per (metro, cbd_id).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: cbd_id
+        tests: [not_null]   # (metro_id, cbd_id) uniqueness: tests/assert_silver_cbds_unique.sql
+      - name: lat
+        tests: [not_null]
+      - name: lon
+        tests: [not_null]
+  - name: silver_hex_prior
+    description: Prior-vintage jobs + population aggregated to H3 cells (LODES prior year + 2010 Centers of Population) — the TOD growth baseline. One row per (metro, hex).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: h3
         tests: [not_null]

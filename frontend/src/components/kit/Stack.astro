@@ -1,0 +1,20 @@
+---
+// Stack — vertical rhythm. Everything stacked flows through here (DIRECTION §3).
+import type { SpaceKey } from "@/lib/tokens";
+import { spaceVar } from "@/lib/tokens";
+
+interface Props {
+  gap?: SpaceKey;
+  as?: string;
+  align?: "start" | "center" | "end" | "stretch";
+  class?: string;
+}
+const { gap = "md", as = "div", align, class: className } = Astro.props as Props;
+const Tag = as as any;
+const style = [
+  "display:flex", "flex-direction:column", `gap:${spaceVar(gap)}`,
+  align ? `align-items:${align}` : "",
+].filter(Boolean).join(";");
+---
+
+<Tag class={className} style={style}><slot /></Tag>

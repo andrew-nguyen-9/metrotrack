@@ -1,0 +1,37 @@
+---
+// DataState — the honest-scaffold state every data-hard page reuses: empty /
+// loading / error / "data coming". Never fabricates a number; explains the gap.
+interface Props {
+  state?: "empty" | "loading" | "error" | "coming";
+  title?: string;
+  message?: string;
+  class?: string;
+}
+const { state = "empty", title, message, class: className } = Astro.props;
+
+const defaults = {
+  empty:   { title: "Nothing to show yet", message: "No data matches here yet." },
+  loading: { title: "Loading…", message: "Fetching the latest data." },
+  error:   { title: "Couldn't load this", message: "The data failed to load. Try again shortly." },
+  coming:  { title: "Data coming", message: "This measure lands once its pipeline is wired through — we won't invent a number." },
+} as const;
+
+const t = title ?? defaults[state].title;
+const m = message ?? defaults[state].message;
+const isError = state === "error";
+const isLoading = state === "loading";
+---
+
+<div
+  class:list={[
+    "rounded-lg border border-hairline bg-surface p-6",
+    isLoading && "motion-safe:animate-pulse",
+    className,
+  ]}
+  role={isError ? "alert" : "status"}
+  aria-busy={isLoading ? "true" : undefined}
+>
+  <p class="font-medium text-text">{t}</p>
+  <p class="mt-1 max-w-prose text-sm text-text-muted">{m}</p>
+  <slot />
+</div>

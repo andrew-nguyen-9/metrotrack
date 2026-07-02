@@ -1,0 +1,74 @@
+---
+// National homepage + metro directory (E2). `/` was a redirect; now it's the
+// national landing: hero, a coverage stat band, and the 10-card city directory
+// (Chicago live, 9 greyed "coming soon" placeholders). No metro prop → Base
+// renders the national shell (logo → /, national Nav + Footer).
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import Grid from "@/components/kit/Grid.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Stat from "@/components/kit/Stat.astro";
+import Callout from "@/components/kit/Callout.astro";
+import Card from "@/components/kit/Card.astro";
+import { liveMetros, comingRegions } from "@/lib/metros";
+
+const live = liveMetros();
+// Coverage figures describe the tracker's own reach (derived from the directory),
+// not published civic data — so no SourceTag. National civic aggregates (funding,
+// ridership) stay absent until more metros ship: we never invent a number.
+const regionsTracked = live.length + comingRegions.length;
+---
+
+<Base>
+  <Stack gap="2xl">
+    <section class="max-w-[60ch]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold tracking-tight leading-[var(--leading-tight)]">
+        Transit accountability, in the open.
+      </h1>
+      <p class="mt-4 text-[length:var(--text-lg)] text-text-muted">
+        A neutral, public tracker for U.S. metro transit — funding, a usage map
+        against population and jobs, hiring, and a job-access score. Every figure
+        shows its source and&nbsp;<span class="tabular">as-of</span> date. Built on
+        open data; free tiers only.
+      </p>
+    </section>
+
+    <StatBand min="10rem">
+      <Stat value={regionsTracked} label="Regions in view" hint="on the roadmap" />
+      <Stat value={live.length} label="Live today" hint={live.map((m) => m.region).join(", ")} />
+      <Stat value="100%" label="Figures sourced" hint="every number cites its origin" />
+    </StatBand>
+
+    <section>
+      <Stack gap="md">
+        <div class="max-w-[60ch]">
+          <h2 class="text-[length:var(--text-xl)] font-medium">Choose a region</h2>
+          <p class="mt-1 text-sm text-text-muted">
+            Chicagoland is live now. More metros light up as their pipelines land.
+          </p>
+        </div>
+
+        <Grid min="16rem" gap="md" as="ul">
+          {live.map((m) => (
+            <li>
+              <Card title={m.name} href={`/${m.slug}`} status="live">
+                {m.region} — CTA, Pace, Metra &amp; NITA. Funding, usage map, hiring,
+                and the job-access score.
+              </Card>
+            </li>
+          ))}
+          {comingRegions.map((name) => (
+            <li>
+              <Card title={name} status="soon">Coming soon.</Card>
+            </li>
+          ))}
+        </Grid>
+      </Stack>
+    </section>
+
+    <Callout tone="note" title="Why only one region?">
+      MetroTrack ships a region only once its data is wired end-to-end and sourced —
+      no placeholder numbers. National aggregates arrive as more metros go live.
+    </Callout>
+  </Stack>
+</Base>

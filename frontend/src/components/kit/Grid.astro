@@ -1,0 +1,23 @@
+---
+// Grid — responsive auto-fit card grid. Columns fit to `min` width, no media
+// queries needed (cards reflow 1→N). Use for StatBand, card decks, directories.
+import type { SpaceKey } from "@/lib/tokens";
+import { spaceVar } from "@/lib/tokens";
+
+interface Props {
+  min?: string;          // min column width before wrapping, e.g. "16rem"
+  gap?: SpaceKey;
+  as?: string;
+  class?: string;
+}
+const { min = "16rem", gap = "md", as = "div", class: className } = Astro.props as Props;
+const Tag = as as any;
+// `min(min, 100%)` guards against overflow when the container is narrower than `min`.
+const style = [
+  "display:grid",
+  `grid-template-columns:repeat(auto-fit,minmax(min(${min},100%),1fr))`,
+  `gap:${spaceVar(gap)}`,
+].join(";");
+---
+
+<Tag class={className} style={style}><slot /></Tag>

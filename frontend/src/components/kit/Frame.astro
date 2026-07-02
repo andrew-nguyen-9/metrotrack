@@ -1,0 +1,12 @@
+---
+// Frame — locks media (map, chart, image) to an aspect ratio so it never causes
+// layout shift (CLS budget). Children fill the frame via object-fit / absolute.
+interface Props {
+  ratio?: string;   // e.g. "16/9", "4/3", "1/1"
+  class?: string;
+}
+const { ratio = "16/9", class: className } = Astro.props;
+const style = `aspect-ratio:${ratio};overflow:hidden;position:relative`;
+---
+
+<div class={className} style={style}><slot /></div>

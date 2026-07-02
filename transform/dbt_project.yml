@@ -24,6 +24,18 @@ vars:
   # Walk radius (metres) for the v1.4 straight-line walkshed access score (½ mi ≈
   # 805 m, ACCESS_SCORE G5). Override: `dbt build --vars '{walk_radius_m: 1609}'`.
   walk_radius_m: 805
+  # ACS 5-year vintages for demographic change (v3.9). Must match the years pulled
+  # into bronze (metros/<slug>.toml [census].acs_years) + share tract geography.
+  acs_prior: 2021
+  acs_latest: 2023
+  # Nominal door-to-door speed (km/h) for the v3.10 TOD straight-line time-to-CBD.
+  # ~24 km/h ≈ a mixed urban transit trip; crow-flies distance ÷ this is a best-case
+  # (floor) minute estimate, refined by ORS network routing when ORS_API_KEY is set.
+  cbd_speed_kmh: 24
+  # Walkable transfer radius (metres) for the v3.7 cross-agency coordination scan
+  # (gold_stop_pairs). ~400 m ≈ a 5-min walk between stops. Override:
+  # `dbt build --vars '{pair_radius_m: 300}'`.
+  pair_radius_m: 400
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into

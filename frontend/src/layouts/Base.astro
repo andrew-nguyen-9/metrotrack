@@ -1,30 +1,32 @@
 ---
 import "../styles/globals.css";
-import { type Metro, defaultMetro } from "../lib/metros";
+import type { Metro } from "@/lib/metros";
+import Nav from "@/components/shell/Nav.astro";
+import Toolbar from "@/components/shell/Toolbar.astro";
+import Footer from "@/components/shell/Footer.astro";
 
 interface Props {
   title?: string;
   description?: string;
-  metro?: Metro;
+  metro?: Metro; // absent = the national homepage/directory (E2)
 }
 
-// Every page lives under a metro now; fall back to the default for safety.
-const { metro = defaultMetro(), title, description } = Astro.props;
+// Metro pages pass their metro; the national homepage passes none.
+const { metro, title, description } = Astro.props;
 
-const resolvedTitle = title ?? `MetroTrack — ${metro.region} Transit Tracker`;
+const resolvedTitle =
+  title ??
+  (metro
+    ? `MetroTrack — ${metro.region} Transit Tracker`
+    : "MetroTrack — Civic Transit Accountability");
 const resolvedDescription =
   description ??
-  `A neutral, public accountability tracker for ${metro.region} transit: funding, a usage map against population and jobs, hiring, and a job-access score.`;
+  (metro
+    ? `A neutral, public accountability tracker for ${metro.region} transit: funding, a usage map against population and jobs, hiring, and a job-access score.`
+    : "A neutral, public accountability tracker for U.S. transit: funding, a usage map against population and jobs, hiring, and a job-access score. Every figure shows its source.");
 
-const base = `/${metro.slug}`;
-// Nav is built from the active metro so islands + links stay generic per metro [B7a].
-const nav = [
-  { href: base, label: "Overview" },
-  { href: `${base}/map`, label: "Map" },
-  { href: `${base}/funding`, label: "Funding" },
-  { href: `${base}/hiring`, label: "Hiring" },
-  { href: `${base}/job-access`, label: "Job access" },
-];
+const base = metro ? `/${metro.slug}` : "/";
+const logoLabel = metro ? `MetroTrack ${metro.name} home` : "MetroTrack home";
 const here = Astro.url.pathname.replace(/\/$/, "");
 
 const ogImage = new URL("/og.png", Astro.site).href;
@@ -36,6 +38,20 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {/* Pre-paint: apply persisted a11y/theme prefs before first paint (no FOUC).
+        Mirrors the data-attr + localStorage contract in shell/Toggles.tsx. */}
+    <script is:inline>
+      (function () {
+        try {
+          var d = document.documentElement;
+          if (localStorage.getItem("mt-theme") === "light") d.setAttribute("data-theme", "light");
+          if (localStorage.getItem("mt-colorblind") === "on") d.setAttribute("data-colorblind", "on");
+          if (localStorage.getItem("mt-motion") === "reduce") d.setAttribute("data-motion", "reduce");
+          var ts = localStorage.getItem("mt-text-size");
+          if (ts === "s" || ts === "l") d.setAttribute("data-text-size", ts);
+        } catch (e) {}
+      })();
+    </script>
     <title>{resolvedTitle}</title>
     <meta name="description" content={resolvedDescription} />
     <link rel="canonical" href={canonical} />
@@ -48,43 +64,23 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
-  <body class="min-h-dvh flex flex-col">
+  <body class="flex min-h-dvh flex-col">
+    <a href="#main" class="skip-link">Skip to content</a>
+
     <header class="border-b border-hairline">
-      <div class="mx-auto max-w-6xl px-4 py-4 flex flex-wrap items-center gap-x-6 gap-y-3">
-        <a href={base} class="shrink-0" aria-label={`MetroTrack ${metro.name} home`}>
-          <img src="/logo-wide.svg" alt={`MetroTrack ${metro.name}`} height="28" class="h-7 w-auto" />
+      <div class="mx-auto flex max-w-[var(--measure-content)] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
+        <a href={base} class="shrink-0" aria-label={logoLabel}>
+          <img src="/logo-wide.svg" alt="MetroTrack" height="28" class="h-7 w-auto" />
         </a>
-        <nav aria-label="Primary" class="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-          {nav.map((item) => {
-            const active = here === item.href.replace(/\/$/, "");
-            return (
-              <a
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                class={active ? "text-text" : "text-text-muted hover:text-text"}
-              >
-                {item.label}
-              </a>
-            );
-          })}
-        </nav>
+        <Nav metro={metro} here={here} />
+        <div class="ml-auto"><Toolbar /></div>
       </div>
     </header>
 
-    <main class="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+    <main id="main" class="mx-auto w-full max-w-[var(--measure-content)] flex-1 px-4 py-8">
       <slot />
     </main>
 
-    <footer class="border-t border-hairline text-text-muted">
-      <div class="mx-auto max-w-6xl px-4 py-6 text-sm">
-        <p>
-          MetroTrack — independent, non-affiliated. Data from CTA, Pace, Metra (GTFS),
-          the Chicago Data Portal, and the U.S. Census. Map data ©
-          <a class="underline" href="https://www.openstreetmap.org/copyright"
-            >OpenStreetMap</a
-          > contributors.
-        </p>
-      </div>
-    </footer>
+    <Footer metro={metro} />
   </body>
 </html>

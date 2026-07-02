@@ -5,7 +5,7 @@ version: 2
 # serving table is asserted by the singular tests under tests/ (gold_* _unique.sql).
 models:
   - name: gold_routes
-    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326). mode ∈ bus/rail/commuter-rail — the E3b filter dimension.
     columns:
       - name: metro_id
         tests: [not_null]
@@ -13,10 +13,15 @@ models:
         tests: [not_null]
       - name: route_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'other']
       - name: geom_wkt
         tests: [not_null]
   - name: gold_stops
-    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326). mode = agency route modes (multi for CTA).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -24,6 +29,11 @@ models:
         tests: [not_null]
       - name: stop_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'multi', 'other']
       - name: geom_wkt
         tests: [not_null]
   - name: gold_hex_metrics
@@ -36,7 +46,11 @@ models:
       - name: geom_wkt
         tests: [not_null]
   - name: gold_funding
-    description: Funding shaped for the spine + funding.json export — operating actual (NTD) vs RTA budget/plan + farebox recovery, per metro × authority × year.
+    description: >
+      Funding shaped for the spine + funding.json export — operating actual (NTD) vs
+      RTA budget/plan plus four NTD-internal efficiency ratios (farebox recovery,
+      subsidy, subsidy_per_rider, cost_per_rider), per metro × authority × year.
+      Ratio bounds asserted by tests/assert_gold_funding_ratios.sql.
     columns:
       - name: metro_id
         tests: [not_null]
@@ -61,4 +75,74 @@ models:
       - name: h3
         tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_access_unique.sql
       - name: jobs_reachable_walk
+        tests: [not_null]
+  - name: gold_ridership_line
+    description: CTA monthly bus-route ridership shaped for the ridership.json export (ridership by line).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: route
+        tests: [not_null]   # (metro,authority,route,month) uniqueness: tests/assert_gold_ridership_line_unique.sql
+      - name: month
+        tests: [not_null]
+  - name: gold_ridership_stop
+    description: CTA monthly 'L' station entries shaped for the ridership.json export (ridership by stop).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: authority_id
+        tests: [not_null]
+      - name: station_id
+        tests: [not_null]   # (metro,authority,station,month) uniqueness: tests/assert_gold_ridership_stop_unique.sql
+      - name: month
+        tests: [not_null]
+  - name: gold_demographic_change
+    description: ACS 5-year population + median-income change per geography (county rollup + tracts), for the spine + demographics.json.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: geo_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["tract", "county"]
+      - name: geoid
+        tests: [not_null]   # (metro_id, geo_level, geoid) uniqueness: tests/assert_gold_demographic_unique.sql
+      - name: pop_latest
+        tests: [not_null]
+  - name: gold_cbds
+    description: Central-business-district anchors shaped for the spine + TOD export (point WKT, SRID 4326). Data-driven, N per metro.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: cbd_id
+        tests: [not_null]   # (metro_id, cbd_id) uniqueness: tests/assert_gold_cbds_unique.sql
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_hex_tod
+    description: TOD serving mart per hex — density (jobs/pop), growth vs prior vintage (jobs/pop %), and straight-line distance + best-case minutes to the nearest configured CBD.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: h3
+        tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_tod_unique.sql
+      - name: nearest_cbd_id
+        tests: [not_null]
+      - name: dist_cbd_m
+        tests: [not_null]   # nonneg + not-null: tests/assert_gold_hex_tod_dist_nonneg.sql
+  - name: gold_stop_pairs
+    description: Cross-agency service-coordination candidates (v3.7) — unordered stop pairs from two different agencies within a walkable transfer radius; great-circle distance (ST_Distance_Sphere), representative agency headways (seed service_headways), expected transfer wait, and a transparent closeness+mismatch score.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: stop_a
+        tests: [not_null]   # (metro_id, authority_a, stop_a, authority_b, stop_b) uniqueness: tests/assert_gold_stop_pairs_unique.sql
+      - name: stop_b
+        tests: [not_null]
+      - name: dist_m
+        tests: [not_null]
+      - name: score
         tests: [not_null]

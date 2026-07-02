@@ -1,0 +1,219 @@
+---
+// /methodology — how each published metric is computed, with links to the modeling
+// docs and the data-source ledger (the source of truth for every figure).
+//
+// Region-variant-capable: the *methods* below are region-agnostic (same model
+// everywhere), while the concrete agencies, parameters, and sources are keyed per
+// region in REGION_METHODOLOGY, with TEMPLATE as the inherited default. Chicago is
+// populated today; adding a region = add a key. Static content page — no islands.
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import Callout from "@/components/kit/Callout.astro";
+import { defaultMetro } from "@/lib/metros";
+
+const repo = "https://github.com/andrew-nguyen-9/metrotrack";
+const doc = (p: string) => `${repo}/blob/main/docs/${p}`;
+const dataSources = doc("architecture/DATA_SOURCES.md");
+
+// The metric methods — region-agnostic. Each links to its modeling doc.
+const methods = [
+  {
+    id: "job-access",
+    name: "Job-access score",
+    lede: "The signature metric: how many jobs you can reach by transit, from where you are, in a reasonable time.",
+    formula: "access_score(origin, cutoff) = Σ jobs(d) for every destination block d reachable from origin by transit within cutoff minutes",
+    points: [
+      "Origins are H3 hexes for the ambient map layer, or any clicked point on demand.",
+      "Cutoffs are 15 / 30 / 45 minutes, departing at a user-selectable time (default weekday AM peak).",
+      "Walk access/egress is capped at ½ mile to and from a stop.",
+      "Jobs come from Census LEHD LODES (block-level workplace counts); transit legs from GTFS.",
+    ],
+    caveat: "Reported as an estimate with a range, not a precise count — the result depends on the cutoff, departure time, and walk radius, all stated inline. Where no routing key is configured, the ambient layer falls back to a straight-line walkshed until network isochrones are enabled.",
+    docHref: doc("modeling/ACCESS_SCORE.md"),
+  },
+  {
+    id: "shortfall",
+    name: "Service-delivery shortfall",
+    lede: "The hiring pillar's headline: staffing shortage shows up as service the authority scheduled but didn't deliver.",
+    formula: "shortfall% = (scheduled_trips − delivered_trips) / scheduled_trips, per authority over a period",
+    points: [
+      "Scheduled service comes from GTFS static; delivered service from GTFS-realtime and published delivered-service reports.",
+      "Reported as a percentage (comparable across authorities) plus absolute trips or hours lost.",
+      "Authority-wide headline, with route-level and mode (bus / rail) drill-down where data allows.",
+      "Corroborated by a secondary posting-based vacancy series (open reqs) scraped weekly.",
+    ],
+    caveat: "Shortfall reflects service not delivered for ANY reason — staffing, maintenance, weather — not staffing alone. It is labelled “service delivered vs. scheduled”, and attributed to staffing only where the authority states a labor cause.",
+    docHref: doc("modeling/UNDERSTAFFING_METRIC.md"),
+  },
+  {
+    id: "funding",
+    name: "Funding: budget vs. actual",
+    lede: "Where the money goes — budgeted operating expense against audited actuals, per service board over time.",
+    formula: "For each authority × year: budgeted operating expense vs. actual (audited) operating expense",
+    points: [
+      "Budgeted figures come from the RTA adopted operating budget (budget book / quarterly reports, transcribed with citation).",
+      "Actuals come from the FTA National Transit Database (audited operating expense, fare revenue, unlinked trips by agency × year).",
+      "Historical financials and ridership are cross-checked against RTAMS.",
+    ],
+    caveat: "Governance and reallocation figures (e.g. the NITA transition) are verified against primary sources before publishing. Any unverified dollar amount is shown as a placeholder, never asserted.",
+    docHref: doc("architecture/DATA_SOURCES.md"),
+  },
+  {
+    id: "mapping",
+    name: "Usage mapping",
+    lede: "Routes and stops mapped against the people and destinations they serve.",
+    formula: "Population and jobs are binned to H3 hexes; routes/stops overlaid with a walkshed to nearby destinations",
+    points: [
+      "Jobs from Census LEHD LODES (block-level); population from the 2020 Census centers of population.",
+      "Destinations (shops, airports, attractions, venues) from Overpass / OpenStreetMap.",
+      "Routes, stops, and schedules from GTFS static for CTA, Pace, and Metra.",
+    ],
+    caveat: "Counts are shown both absolute and per-capita so a dense area's raw total doesn't drown out an underserved area's deficit. OpenStreetMap data is © OpenStreetMap contributors (ODbL).",
+    docHref: doc("architecture/DATA_SOURCES.md"),
+  },
+];
+
+// ── Per-region variant slot ────────────────────────────────────────────────
+// Region-specific agencies, sources, and parameters. Chicago populated; other
+// regions inherit TEMPLATE until their own block is authored.
+type RegionInfo = {
+  agencies: string;
+  jobsSource: string;
+  fundingSource: string;
+  notes: string[];
+};
+
+const TEMPLATE: RegionInfo = {
+  agencies: "the region's transit authorities",
+  jobsSource: "Census LEHD LODES for the region's counties",
+  fundingSource: "the region's published operating budgets and the FTA National Transit Database",
+  notes: [
+    "This region inherits the standard method above; region-specific sources and parameters are documented when the region goes live.",
+  ],
+};
+
+const REGION_METHODOLOGY: Record<string, RegionInfo> = {
+  chicago: {
+    agencies: "CTA, Pace, Metra, and the NITA (formerly RTA)",
+    jobsSource: "Census LEHD LODES8 (workplace area, Cook County and the collar counties)",
+    fundingSource: "the RTA adopted operating budget and the FTA National Transit Database (CTA / Metra / Pace subset)",
+    notes: [
+      "Career-page snapshots are collected weekly from each authority's own ATS (CTA via Taleo, Metra via Cadient, Pace via its careers site).",
+      "The ambient job-access layer currently uses a straight-line walkshed; openrouteservice network isochrones activate once an API key is configured.",
+      "The NITA funding-reallocation dollar amount is a placeholder until verified against primary legislation.",
+    ],
+  },
+};
+
+const metro = defaultMetro();
+const region: RegionInfo = REGION_METHODOLOGY[metro.slug] ?? TEMPLATE;
+---
+
+<Base
+  metro={metro}
+  title="Methodology — MetroTrack"
+  description="How MetroTrack computes each metric — the job-access score, service-delivery shortfall, funding, and mapping — with formulas, caveats, and links to every data source."
+>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Methodology
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        How every published number is computed, and where it comes from. The methods
+        below are the same for every region MetroTrack covers; the specific agencies
+        and sources are listed per region at the end.
+      </p>
+    </Stack>
+
+    <Callout tone="accent" title="Source of truth">
+      Every figure on the site traces to a row in the
+      <a href={dataSources} target="_blank" rel="noopener noreferrer">data-source ledger</a>
+      (<span class="tabular">docs/architecture/DATA_SOURCES.md</span>), which records each
+      source's license, refresh cadence, and verification status. Bronze snapshots under
+      <span class="tabular">data/</span> are the receipts — every served number is
+      reproducible from a committed file.
+    </Callout>
+
+    <Stack gap="xl" as="section" aria-labelledby="metrics-heading">
+      <h2 id="metrics-heading" class="text-[length:var(--text-lg)] font-medium">How each metric is computed</h2>
+
+      {methods.map((m) => (
+        <Stack gap="sm" as="article" aria-labelledby={`m-${m.id}`} class="max-w-[var(--measure)] scroll-mt-24" id={m.id}>
+          <h3 id={`m-${m.id}`} class="text-[length:var(--text-md)] font-semibold">{m.name}</h3>
+          <p class="text-text-muted leading-[var(--leading-normal)]">{m.lede}</p>
+
+          <pre class="overflow-x-auto rounded-lg border border-hairline bg-surface p-4 text-sm"><code class="text-text">{m.formula}</code></pre>
+
+          <ul class="flex flex-col gap-2 text-sm text-text-muted leading-[var(--leading-normal)]">
+            {m.points.map((pt) => (
+              <li class="flex gap-3">
+                <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+                <span>{pt}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Callout tone="warning" title="Caveat">{m.caveat}</Callout>
+
+          <p class="text-sm">
+            <a class="underline text-text-muted hover:text-text" href={m.docHref} target="_blank" rel="noopener noreferrer">
+              Full modeling notes ↗
+            </a>
+          </p>
+        </Stack>
+      ))}
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="region-heading" class="max-w-[var(--measure)]">
+      <h2 id="region-heading" class="text-[length:var(--text-lg)] font-medium">
+        Regional data &amp; parameters — {metro.region}
+      </h2>
+      <p class="text-text-muted leading-[var(--leading-normal)]">
+        The methods above apply to <strong class="text-text">{region.agencies}</strong>.
+        Jobs are sourced from {region.jobsSource}. Funding figures come from {region.fundingSource}.
+      </p>
+      <ul class="flex flex-col gap-2 text-sm text-text-muted leading-[var(--leading-normal)]">
+        {region.notes.map((n) => (
+          <li class="flex gap-3">
+            <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+            <span>{n}</span>
+          </li>
+        ))}
+      </ul>
+      <Callout tone="note" title="Other regions">
+        MetroTrack is built to cover more than one metro. Each region reuses the same
+        metric definitions above and lists its own agencies, sources, and parameters
+        here as it goes live.
+      </Callout>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="more-heading" class="max-w-[var(--measure)]">
+      <h2 id="more-heading" class="text-[length:var(--text-lg)] font-medium">Dig deeper</h2>
+      <div class="flex flex-wrap gap-3">
+        <a
+          href={dataSources}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 rounded-md border border-hairline bg-surface px-4 py-2 text-sm font-medium transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+        >
+          Data-source ledger ↗
+        </a>
+        <a
+          href={repo}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 rounded-md border border-hairline px-4 py-2 text-sm font-medium text-text-muted transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+        >
+          Source on GitHub ↗
+        </a>
+        <a
+          href="/about"
+          class="inline-flex items-center gap-1 rounded-md border border-hairline px-4 py-2 text-sm font-medium text-text-muted transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+        >
+          About the project →
+        </a>
+      </div>
+    </Stack>
+  </Stack>
+</Base>

@@ -16,10 +16,22 @@ status = "live"                   # live | soon [C12a]
 bbox = [-88.6175, 41.4183333, -87.5477778, 42.5858333]
 
 [census]
-state_fips  = "17"                # Illinois
-county_fips = ["031"]             # Cook County (v1 scope; collar counties later)
-lodes_state = "il"                # LEHD LODES8 state slug
-lodes_year  = 2022                # latest stable LODES8 vintage
+state_fips       = "17"           # Illinois
+county_fips      = ["031"]        # Cook County (v1 scope; collar counties later)
+lodes_state      = "il"           # LEHD LODES8 state slug
+lodes_year       = 2022           # latest stable LODES8 vintage
+lodes_prior_year = 2019           # TOD jobs-growth baseline (same LODES8 series) [v3.10]
+acs_years        = [2021, 2023]   # ACS 5-yr vintages for demographic change (v3.9). Both
+                                  # sit on 2020 census tracts → valid per-tract change.
+
+# ── central business districts (TOD time-to-CBD anchors) [v3.10] ────────
+# Data-driven, N per metro: adding a district is a row here, NOT code. Chicago has
+# one today (the Loop); NYC/SF Bay declare several. lat/lon = WGS84. id = kebab slug.
+[[cbd]]
+id   = "loop"
+name = "The Loop"
+lat  = 41.8786
+lon  = -87.6298
 
 # ── agencies ────────────────────────────────────────────────────────────
 # mode: bus | rail | multi. ntd_ids: FTA National Transit Database reporter ids

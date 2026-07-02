@@ -1,0 +1,54 @@
+---
+// Global footer — attribution + links, and a button back to an9.dev (the parent
+// site). Reused on every page via Base.astro.
+import { type Metro, liveMetros } from "@/lib/metros";
+
+interface Props {
+  metro?: Metro; // absent = national footer: link the live metros instead
+}
+const { metro } = Astro.props;
+const links = metro
+  ? [
+      { href: `/${metro.slug}/map`, label: "Map" },
+      { href: `/${metro.slug}/funding`, label: "Funding" },
+      { href: `/${metro.slug}/hiring`, label: "Hiring" },
+      { href: `/${metro.slug}/job-access`, label: "Job access" },
+      { href: `/${metro.slug}/articles`, label: "Articles" },
+      { href: "/methodology", label: "Methodology" },
+      { href: "/about", label: "About" },
+    ]
+  : [
+      { href: "/", label: "All metros" },
+      { href: "/articles", label: "Articles" },
+      { href: "/methodology", label: "Methodology" },
+      { href: "/about", label: "About" },
+      ...liveMetros().map((m) => ({ href: `/${m.slug}`, label: m.name })),
+    ];
+---
+
+<footer class="mt-auto border-t border-hairline text-text-muted">
+  <div class="mx-auto flex max-w-[var(--measure-content)] flex-col gap-6 px-4 py-8 sm:flex-row sm:items-start sm:justify-between">
+    <div class="max-w-prose text-sm">
+      <p class="font-medium text-text">MetroTrack</p>
+      <p class="mt-1">
+        Independent, non-affiliated. Data from CTA, Pace, Metra (GTFS), the Chicago
+        Data Portal, and the U.S. Census. Map data ©
+        <a class="underline hover:text-text" href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>
+        contributors. Every figure shows its source and as-of date.
+      </p>
+    </div>
+    <nav aria-label="Footer" class="flex flex-col gap-2 text-sm">
+      <ul class="flex flex-wrap gap-x-4 gap-y-1">
+        {links.map((l) => (
+          <li><a class="hover:text-text" href={l.href}>{l.label}</a></li>
+        ))}
+      </ul>
+      <a
+        href="https://an9.dev"
+        class="inline-flex w-fit items-center gap-1 rounded-md border border-hairline px-3 py-1.5 text-text-muted transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+      >
+        ← an9.dev
+      </a>
+    </nav>
+  </div>
+</footer>

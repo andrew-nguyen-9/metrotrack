@@ -22,10 +22,16 @@ import bronze
 import census
 import checks
 import cli
+import delays
 import funding
 import gtfs
 import hiring
+import live
+import load
 import metros
+import tod
+import psycopg.conninfo
+import ridership
 
 _ALL_SOURCES = ["cta", "metra", "pace", "census", "ntd", "rta", "hiring"]
 _TODAY = date(2026, 6, 28)
@@ -145,16 +151,40 @@ def main() -> int:
 
     routes_b, ids = gtfs.subset_routes(b"route_id,route_short_name\nA,1\nB,2\nC,3\n", 2)
     assert ids == {"A", "B"} and routes_b.count(b"\n") == 3  # header + 2 rows
-    passed.append("subset_routes keeps first N + their ids")
+    passed.append("subset_routes keeps first N + their ids (no route_type → flat)")
+
+    # Stratify by route_type so every mode a feed carries survives the sample — a flat
+    # head slice would drop CTA rail (bus routes are listed before the 'L' lines).
+    strat_b, strat_ids = gtfs.subset_routes(
+        b"route_id,route_type\nB1,3\nB2,3\nB3,3\nR1,1\nR2,1\n", 2)
+    assert strat_ids == {"B1", "B2", "R1", "R2"}, strat_ids  # 2 bus + 2 rail, B3 dropped
+    passed.append("subset_routes stratifies by route_type (keeps every mode)")
 
     trips = b"route_id,shape_id\nA,sA1\nA,sA1\nA,sA2\nA,sA3\nB,sB1\nC,sC1\n"
-    _, shape_ids = gtfs.subset_trips(trips, {"A", "B"}, max_shapes_per_route=2)
+    _, shape_ids, _ = gtfs.subset_trips(trips, {"A", "B"}, max_shapes_per_route=2)
     assert shape_ids == {"sA1", "sA2", "sB1"}, shape_ids  # A capped at 2 shapes, C dropped
     passed.append("subset_trips caps shapes/route + collects shape_ids")
 
-    _, no_shapes = gtfs.subset_trips(b"route_id,trip_id\nA,1\nA,2\nB,3\n", {"A", "B"})
-    assert no_shapes == set()
-    passed.append("subset_trips tolerates trips.txt without shape_id")
+    # trip_ids of the kept rows drive route-coherent stop sampling.
+    trips_id = b"route_id,trip_id,shape_id\nA,t1,sA1\nA,t2,sA1\nA,t3,sA2\nB,t4,sB1\n"
+    _, _, trip_ids = gtfs.subset_trips(trips_id, {"A", "B"}, max_shapes_per_route=2)
+    assert trip_ids == {"t1", "t3", "t4"}, trip_ids  # one trip per kept shape
+    passed.append("subset_trips returns the kept trip_ids")
+
+    _, no_shapes, no_shape_trips = gtfs.subset_trips(b"route_id,trip_id\nA,1\nA,2\nB,3\n", {"A", "B"})
+    assert no_shapes == set() and no_shape_trips == {"1", "3"}  # one trip/route, ids kept
+    passed.append("subset_trips tolerates trips.txt without shape_id (still yields trip_ids)")
+
+    # stop_times → the stops those trips visit (strips space-padding like Metra's).
+    stop_times = b"trip_id,stop_id,stop_sequence\nt1,s1,1\nt1, s2 ,2\nt4,s9,1\ntX,s99,1\n"
+    assert gtfs.stop_ids_for_trips(stop_times, {"t1", "t4"}) == {"s1", "s2", "s9"}
+    assert gtfs.stop_ids_for_trips(stop_times, set()) == set()  # no trips → no stops
+    passed.append("stop_ids_for_trips collects the stops of the kept trips (route-coherent)")
+
+    assert gtfs.subset_stops_by_id(
+        b"stop_id,stop_name\ns1,A\ns2,B\ns3,C\n", {"s1", "s3"}
+    ) == b"stop_id,stop_name\ns1,A\ns3,C\n"
+    passed.append("subset_stops_by_id keeps only the referenced stops")
 
     shapes = b"shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\nsA1,1,2,1\nsA1,1,3,2\nsZ,0,0,1\n"
     assert gtfs.subset_shapes(shapes, {"sA1"}).count(b"\n") == 3  # header + 2 sA1 rows
@@ -186,6 +216,31 @@ def main() -> int:
     assert crows[0] == "bg_geoid,population,lat,lon", crows
     assert crows[1] == "170310001001,1135,41.880000,-087.630000" and len(crows) == 2, crows
     passed.append("parse_cenpop_bg assembles bg_geoid, strips BOM/+, filters Cook")
+
+    # ACS table-based Summary File parse (v3.9) — keeps the county rollup + Cook
+    # tracts, drops other geographies, reads the estimate col by NAME (a trailing
+    # margin col proves we don't index by position).
+    acs_pop = census.parse_acs_table(
+        b"GEO_ID|B01003_E001|B01003_M001\n"
+        b"0100000US|331097593|-555555555\n"          # nation — dropped
+        b"0500000US17031|5265398|1234\n"             # Cook county rollup — kept
+        b"1400000US17031010100|4534|321\n"           # Cook tract — kept
+        b"1400000US17001000100|999|10\n"             # Adams county tract — dropped
+    )
+    assert acs_pop["17031"] == ("county", "5265398"), acs_pop
+    assert acs_pop["17031010100"] == ("tract", "4534") and len(acs_pop) == 2, acs_pop
+    passed.append("parse_acs_table keeps county+Cook tracts, drops others, reads _E001 by name")
+
+    # build_acs_rows merges the population + median-income maps by geoid (sorted),
+    # tolerating a geoid missing from the income table (blank cell, not a crash).
+    acs_inc = {"17031": ("county", "72121"), "17031010100": ("tract", "60000")}
+    csv_rows = census.build_acs_rows(acs_pop, acs_inc).decode().splitlines()
+    assert csv_rows[0] == "geoid,geo_level,population,median_income", csv_rows
+    assert csv_rows[1] == "17031,county,5265398,72121", csv_rows
+    assert csv_rows[2] == "17031010100,tract,4534,60000", csv_rows
+    missing_inc = census.build_acs_rows({"17031999999": ("tract", "10")}, {}).decode().splitlines()
+    assert missing_inc[1] == "17031999999,tract,10,", missing_inc  # blank income, no crash
+    passed.append("build_acs_rows merges pop+income by geoid, tolerates missing income")
 
     # NTD parse — Chicago reporters only; Pace's two reports fold into one line;
     # foreign agencies dropped; numeric fields summed.
@@ -286,6 +341,28 @@ def main() -> int:
     assert [r["value_s"] for r in sample] == [900, 1800, 2700], sample
     passed.append("isochrone sample fixture parses to 15/30/45-min rings")
 
+    # Ridership: CTA bus-route + 'L'-station monthly parse — one row per record,
+    # month truncated to a date, monthtotal → int, empty keys dropped.
+    bus = ridership.parse_bus(json.dumps([
+        {"route": "9", "routename": "Ashland", "month_beginning": "2026-04-01T00:00:00.000",
+         "avg_weekday_rides": "20481.3", "monthtotal": "545231"},
+        {"route": "", "routename": "junk", "month_beginning": "2026-04-01T00:00:00.000",
+         "monthtotal": "1"},  # no route id → dropped
+    ]).encode())
+    brows = bus.decode().splitlines()
+    assert brows[0] == "authority_id,route,route_name,month,rides", brows
+    assert brows[1] == "cta,9,Ashland,2026-04-01,545231" and len(brows) == 2, brows
+    passed.append("parse_bus keeps one row per route×month, drops rows with no route")
+
+    rail = ridership.parse_rail(json.dumps([
+        {"station_id": "40380", "stationame": "Clark/Lake", "month_beginning": "2026-04-01T00:00:00.000",
+         "monthtotal": "612345.0"},  # decimal tolerated
+    ]).encode())
+    rrows = rail.decode().splitlines()
+    assert rrows[0] == "authority_id,station_id,station_name,month,rides", rrows
+    assert rrows[1] == "cta,40380,Clark/Lake,2026-04-01,612345" and len(rrows) == 2, rrows
+    passed.append("parse_rail keeps one row per station×month + tolerates decimals")
+
     # Metro registry: the real committed chicago.toml parses + validates, and the
     # invariants reject a bad slug / degenerate bbox / modeless agency. [v2.0.1]
     assert "chicago" in metros.list_metros()
@@ -313,6 +390,20 @@ def main() -> int:
         except ValueError:
             pass
     passed.append("metro validators reject bad slug/bbox/status/mode + empty agencies")
+
+    # ── v3.10 TOD: the CBD anchor list → CSV is pure (no network) + multi-CBD-
+    # ready; a metro with no [[cbd]] fails loud (time-to-CBD needs an anchor).
+    trows = tod.cbds_csv(chi).decode().splitlines()
+    assert trows[0] == "cbd_id,name,lat,lon", trows
+    assert trows[1].startswith("loop,The Loop,41.8786"), trows
+    _nocbd = metros.Metro(slug="x", name="X", tz="UTC", status="live",
+                          bbox=(0.0, 0.0, 1.0, 1.0), agencies=(), raw={})
+    try:
+        tod.cbds_csv(_nocbd)
+        assert False, "cbds_csv should reject a metro with no CBD anchor"
+    except ValueError:
+        pass
+    passed.append("tod.cbds_csv emits sorted CBD rows + rejects a metro with no anchor")
 
     # ── v2.0.3: parametrized pipeline (`--metro`) ──────────────────────────
     # The shared CLI helper resolves the real Chicago config and exits loud on a
@@ -343,7 +434,7 @@ def main() -> int:
     # a pass/fail dry-run struct (no-network: geo + config validity only). [H20a]
     entrypoints = {
         "gtfs": gtfs, "census": census, "funding": funding,
-        "hiring": hiring, "access": access,
+        "hiring": hiring, "access": access, "ridership": ridership,
     }
     for name, mod in entrypoints.items():
         report = mod.dry_run(chi_cfg, check_network=False)
@@ -359,6 +450,92 @@ def main() -> int:
     failing.add("bad-check", "fail", "boom")
     assert not failing.ok and "FAIL" in failing.render()
     passed.append("DryRunReport.ok is false when any check fails")
+
+    # load.build_conninfo — a raw '%' in the DB password must survive (libpq's URI
+    # parser would choke on "%2U…"); we hand it keyword params, undecoded. [v3.0]
+    ci = load.build_conninfo(
+        "postgresql://postgres:%2Uab,.Za@db.example.co:5432/postgres?sslmode=require")
+    d = psycopg.conninfo.conninfo_to_dict(ci)
+    assert d["password"] == "%2Uab,.Za" and d["host"] == "db.example.co", d
+    assert d["dbname"] == "postgres" and d["sslmode"] == "require", d
+    assert load.build_conninfo("host=x dbname=y") == "host=x dbname=y"  # non-URL passthrough
+    passed.append("load.build_conninfo tolerates a raw '%' password (no URI percent-decode)")
+
+    # live.append_sample — the E11 sampler. No network: exercise the append log
+    # contract (idempotent on `generated`, per-day path, schema guard) with fixtures.
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d) / "bronze"
+        feed = {"metro": "chicago", "generated": "2026-07-02T18:00:00Z",
+                "vehicles": [{"route_id": "9"}], "arrivals": [], "errors": []}
+        p1, a1 = live.append_sample(feed, root=root)
+        assert a1 and p1 == root / "chicago" / "cta_live" / "2026-07-02.ndjson", p1
+        # Re-appending the same instant is a no-op (retry-safe).
+        _, a2 = live.append_sample(feed, root=root)
+        assert not a2 and p1.read_text().count("\n") == 1, p1.read_text()
+        # A later instant appends a new line to the same day log.
+        _, a3 = live.append_sample({**feed, "generated": "2026-07-02T18:00:30Z"}, root=root)
+        assert a3 and p1.read_text().count("\n") == 2, p1.read_text()
+        passed.append("live.append_sample: idempotent NDJSON append keyed by generated ts")
+    try:
+        live.append_sample({"metro": "x"}, root=Path(d))
+        raise AssertionError("append_sample accepted a non-LiveFeed payload")
+    except ValueError:
+        passed.append("live.append_sample rejects a payload missing LiveFeed keys")
+
+    # delays.py — E11 delay + crowding-proxy aggregation over the live-feed samples.
+    # Pure functions, fixtures only (the NDJSON log is a gitignored live time series).
+    # An empty log yields an honest zero-sample payload the page renders as DataState.
+    empty = delays.aggregate([])
+    assert empty["meta"]["samples"] == 0 and empty["delay"]["byMode"] == []
+    assert empty["bunching"]["observations"] == 0 and empty["delay"]["delayedShare"] == 0.0
+    assert [b["bucket"] for b in empty["countdown"]] == list(delays.COUNTDOWN_BUCKETS)
+    passed.append("delays.aggregate: empty log → honest zero-sample payload (DataState)")
+
+    # Delayed share is per-observation, per-mode: a vehicle seen in N snapshots counts
+    # N times (it's a share over time). 2 of 3 bus obs delayed → 0.6667; rail 0/1.
+    two_feeds = [
+        {"generated": "2026-07-02T18:00:00Z",
+         "vehicles": [{"mode": "bus", "delayed": True}, {"mode": "rail", "delayed": False}],
+         "arrivals": []},
+        {"generated": "2026-07-02T18:00:30Z",
+         "vehicles": [{"mode": "bus", "delayed": True}, {"mode": "bus", "delayed": False}],
+         "arrivals": []},
+    ]
+    dl = delays.delayed_breakdown(two_feeds)
+    bus = next(m for m in dl["byMode"] if m["mode"] == "bus")
+    assert bus["observations"] == 3 and bus["delayed"] == 2 and bus["delayedShare"] == 0.6667, dl
+    assert dl["observations"] == 4 and dl["delayed"] == 2, dl
+    passed.append("delays.delayed_breakdown: per-observation delayed share, split by mode")
+
+    # Countdown histogram buckets by wait: 0→DUE, 3→1–5, 20→16+; None is skipped.
+    hist = delays.countdown_histogram([{"arrivals": [
+        {"countdown_min": 0}, {"countdown_min": 3}, {"countdown_min": 3},
+        {"countdown_min": 20}, {"countdown_min": None}]}])
+    hb = {h["bucket"]: h["count"] for h in hist}
+    assert hb == {"DUE": 1, "1–5": 2, "6–10": 0, "11–15": 0, "16+": 1}, hist
+    passed.append("delays.countdown_histogram: next-arrival waits bucketed, null skipped")
+
+    # Bunching: a (route, stop, dir) group needs ≥2 DISTINCT vehicles to be an
+    # observation; bunched when the two soonest are within gap_min. Route 9 has two
+    # buses 1 min apart (bunched); route 4 has one vehicle (not an observation).
+    bfeed = {"arrivals": [
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "a", "countdown_min": 2},
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "b", "countdown_min": 3},
+        {"route_id": "4", "stop_id": "2", "direction": "S", "vehicle_id": "c", "countdown_min": 5},
+    ]}
+    bn = delays.bunching([bfeed])
+    assert bn["observations"] == 1 and bn["bunched"] == 1 and bn["bunchRate"] == 1.0, bn
+    assert bn["topRoutes"][0]["route"] == "9", bn
+    passed.append("delays.bunching: ≥2-vehicle groups only, bunched within gap_min")
+
+    # Not bunched: two vehicles 8 min apart at one stop = healthy headway, and a
+    # single vehicle repeated across snapshots dedupes to one (no false observation).
+    wide = delays.bunching([{"arrivals": [
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "a", "countdown_min": 2},
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "b", "countdown_min": 10},
+    ]}])
+    assert wide["observations"] == 1 and wide["bunched"] == 0 and wide["bunchRate"] == 0.0, wide
+    passed.append("delays.bunching: healthy headway (>gap_min) is not counted as bunched")
 
     # verify_metro — the data-integrity gate the loop reuses (v2.0.6). Exercise it
     # no-network against fixture gold warehouses + bronze manifests: a complete

@@ -35,6 +35,70 @@ COOK_STATE = "17"
 COOK_COUNTY = "031"
 LODES_DEFAULT_YEAR = 2022
 
+# ACS 5-year change (v3.9). The Census *Data API* now requires a key; the
+# **table-based Summary File** is the equivalent key-free source — one pipe-delimited
+# `.dat` per detail table, carrying every geography (nation → block group). We keep
+# the tract (summary level 140) + county (050) rows for the in-scope counties. Two
+# vintages that share the same census-tract geography give a valid per-tract change;
+# 2021 & 2023 both sit on 2020 tracts (100% GEOID overlap for Cook). Line 001 is the
+# table total (population / median household income). See docs/architecture/DATA_SOURCES.md.
+ACS_DEFAULT_YEARS = (2021, 2023)
+ACS_TABLES = {"population": "b01003", "median_income": "b19013"}  # both: _E001 = total
+
+
+def acs_sf_url(year: int, table: str) -> str:
+    """Key-free ACS 5-year table-based Summary File `.dat` for one detail table."""
+    return (
+        f"https://www2.census.gov/programs-surveys/acs/summary_file/{year}/"
+        f"table-based-SF/data/5YRData/acsdt5y{year}-{table}.dat"
+    )
+
+
+def parse_acs_table(raw: bytes, state_fips: str = COOK_STATE,
+                    county_fips: tuple[str, ...] = (COOK_COUNTY,)) -> dict[str, tuple[str, str]]:
+    """Trim a table-based SF `.dat` → `{geoid: (geo_level, estimate)}` for the in-scope counties.
+
+    Pipe-delimited; header is `GEO_ID|<TABLE>_E001|<TABLE>_M001|…`. We read the
+    estimate column *by name* (ends `_E001`), not by position. Keeps tract rows
+    (`1400000US<state><county><tract>`, geoid = 11-digit state+county+tract) and the
+    county rollup (`0500000US<state><county>`, geoid = 5-digit state+county).
+    """
+    tract_prefixes = tuple("1400000US" + state_fips + c for c in county_fips)
+    county_ids = {"0500000US" + state_fips + c: state_fips + c for c in county_fips}
+    reader = csv.reader(io.StringIO(raw.decode("utf-8-sig")), delimiter="|")
+    header = [c.strip() for c in next(reader)]
+    est = next(i for i, c in enumerate(header) if c.endswith("_E001"))
+
+    out: dict[str, tuple[str, str]] = {}
+    for row in reader:
+        if not row:
+            continue
+        gid = row[0].strip()
+        if gid in county_ids:
+            out[county_ids[gid]] = ("county", row[est].strip())
+        elif gid.startswith(tract_prefixes):
+            out[gid[9:]] = ("tract", row[est].strip())
+    return out
+
+
+def build_acs_rows(population: dict[str, tuple[str, str]],
+                   income: dict[str, tuple[str, str]]) -> bytes:
+    """Merge the population + median-income maps → `geoid,geo_level,population,median_income` CSV."""
+    out = io.StringIO()
+    w = csv.writer(out)
+    w.writerow(["geoid", "geo_level", "population", "median_income"])
+    for geoid in sorted(population):
+        level, pop = population[geoid]
+        inc = income.get(geoid, ("", ""))[1]
+        w.writerow([geoid, level, pop, inc])
+    return out.getvalue().encode()
+
+
+def fetch_acs(url: str) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": cli.UA})
+    with urllib.request.urlopen(req, timeout=180) as r:
+        return r.read()
+
 
 def lodes_url(state: str, year: int) -> str:
     """LEHD LODES8 WAC (`S000 JT00`) workplace-jobs file for a state + vintage."""
@@ -44,11 +108,15 @@ def lodes_url(state: str, year: int) -> str:
     )
 
 
-def cenpop_url(state_fips: str) -> str:
-    """2020 Centers of Population (block-group) file for a state FIPS."""
+def cenpop_url(state_fips: str, year: int = 2020) -> str:
+    """Centers of Population (block-group) file for a state FIPS + decennial year.
+
+    2020 is the current binning source; 2010 is the TOD population-growth baseline
+    (same columns, so parse_cenpop_bg handles both). [v3.10]
+    """
     return (
-        "https://www2.census.gov/geo/docs/reference/cenpop2020/blkgrp/"
-        f"CenPop2020_Mean_BG{state_fips}.txt"
+        f"https://www2.census.gov/geo/docs/reference/cenpop{year}/blkgrp/"
+        f"CenPop{year}_Mean_BG{state_fips}.txt"
     )
 
 
@@ -106,6 +174,9 @@ def parse_cenpop_bg(raw: bytes, state_fips: str = COOK_STATE,
     return out.getvalue().encode()
 
 
+CENPOP_PRIOR_YEAR = 2010  # decennial TOD population-growth baseline [v3.10]
+
+
 def _census_cfg(metro) -> tuple[str, tuple[str, ...], str, int]:
     """(state_fips, county_fips, lodes_state, lodes_year) from a metro's [census]."""
     c = metro.raw.get("census") or {}
@@ -115,6 +186,18 @@ def _census_cfg(metro) -> tuple[str, tuple[str, ...], str, int]:
         str(c["lodes_state"]),
         int(c.get("lodes_year", LODES_DEFAULT_YEAR)),
     )
+
+
+def _acs_years(metro) -> tuple[int, ...]:
+    """The ACS 5-year vintages to pull for change-over-time (≥2). From [census].acs_years."""
+    c = metro.raw.get("census") or {}
+    return tuple(int(y) for y in c.get("acs_years", ACS_DEFAULT_YEARS))
+
+
+def _lodes_prior_year(metro) -> int | None:
+    """The configured jobs-growth baseline LODES vintage, or None if unset. [v3.10]"""
+    c = metro.raw.get("census") or {}
+    return int(c["lodes_prior_year"]) if c.get("lodes_prior_year") else None
 
 
 def fetch_lodes(url: str) -> bytes:
@@ -134,6 +217,8 @@ def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
         report.checks.append(c)
     state, _counties, lstate, lyear = _census_cfg(metro)
     urls = {"lodes_wac": lodes_url(lstate, lyear), "cenpop_bg": cenpop_url(state)}
+    for y in _acs_years(metro):
+        urls[f"acs_pop_{y}"] = acs_sf_url(y, ACS_TABLES["population"])
     for name, url in urls.items():
         report.checks.append(cli.reach(name, url) if check_network
                              else cli.Check(name, "pass", url))
@@ -141,7 +226,13 @@ def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
 
 
 def ingest(metro) -> int:
-    """Fetch both sources, trim to the metro's counties, write per-metro bronze."""
+    """Fetch both sources, trim to the metro's counties, write per-metro bronze.
+
+    Also fetches the TOD growth baselines when configured — the prior LODES vintage
+    (jobs) and the 2010 Centers of Population (population) — as separate bronze
+    tables (`*_prior.parquet`). Both reuse the same parsers, so growth is real data,
+    not a synthetic figure (docs/architecture/DATA_SOURCES.md). [v3.10]
+    """
     state, counties, lstate, lyear = _census_cfg(metro)
     lodes = bronze.ingest_csv(
         "census", "lodes_wac",
@@ -155,6 +246,30 @@ def ingest(metro) -> int:
     )
     print(f"  ok  {metro.slug}/census/lodes_wac.parquet ({lodes.rows} blocks)")
     print(f"  ok  {metro.slug}/census/cenpop_bg.parquet ({cenpop.rows} block groups)")
+
+    # ACS 5-year change vintages (v3.9): one bronze table per year, tract + county rows.
+    for year in _acs_years(metro):
+        pop = parse_acs_table(fetch_acs(acs_sf_url(year, ACS_TABLES["population"])), state, counties)
+        inc = parse_acs_table(fetch_acs(acs_sf_url(year, ACS_TABLES["median_income"])), state, counties)
+        r = bronze.ingest_csv("census", f"acs_{year}", build_acs_rows(pop, inc), metro=metro.slug)
+        print(f"  ok  {metro.slug}/census/acs_{year}.parquet ({r.rows} tract+county rows)")
+
+    pyear = _lodes_prior_year(metro)
+    if pyear:
+        lodes_p = bronze.ingest_csv(
+            "census", "lodes_wac_prior",
+            parse_lodes_wac(fetch_lodes(lodes_url(lstate, pyear)), state, counties),
+            metro=metro.slug,
+        )
+        cenpop_p = bronze.ingest_csv(
+            "census", "cenpop_bg_prior",
+            parse_cenpop_bg(fetch_cenpop(cenpop_url(state, CENPOP_PRIOR_YEAR)), state, counties),
+            metro=metro.slug,
+        )
+        print(f"  ok  {metro.slug}/census/lodes_wac_prior.parquet "
+              f"({lodes_p.rows} blocks, LODES {pyear})")
+        print(f"  ok  {metro.slug}/census/cenpop_bg_prior.parquet "
+              f"({cenpop_p.rows} block groups, CenPop {CENPOP_PRIOR_YEAR})")
     return 0
 
 

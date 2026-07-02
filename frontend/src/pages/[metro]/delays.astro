@@ -1,0 +1,194 @@
+---
+import Base from "@/layouts/Base.astro";
+import DelaysChart from "@/components/DelaysChart.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, delaysData } from "@/lib/metros";
+import {
+  hasSamples, fmtInt, fmtPct, tsLabel, modeLabel, type DelaysData,
+} from "@/lib/delays";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = delaysData(metro.slug) as DelaysData;
+
+const live = hasSamples(data);
+const asOf = tsLabel(data.meta.lastGenerated);
+const bunch = data.bunching;
+const delay = data.delay;
+const arrivals = data.countdown.some((b) => b.count > 0);
+---
+
+<Base metro={metro} title={`Delays & crowding — MetroTrack ${metro.name}`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Delays &amp; crowding, from the live feed
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Rolled up from repeated snapshots of CTA's live vehicle + arrival feed. We
+        report only what a free prediction feed honestly supports: CTA's own
+        <strong>delayed</strong> flag, the next-arrival wait distribution, and a
+        <strong>bunching</strong> proxy for crowding. No invented load numbers.
+      </p>
+    </Stack>
+
+    <Callout title="How to read this" tone="accent">
+      This feed has <strong>no schedule times and no passenger counts</strong>, so we do
+      not compute minutes-late or occupancy. <strong>Delayed share</strong> is CTA's own
+      flag on each vehicle. <strong>Bunching</strong> is a crowding proxy: when two
+      same-route vehicles are predicted at one stop within {bunch.gapMin} minutes, the
+      headway has collapsed — the leader runs packed, the trailer near-empty.
+    </Callout>
+
+    {!live ? (
+      <DataState
+        state="coming"
+        title="Not enough samples yet"
+        message="This page fills in once the scheduled sampler has logged live snapshots over time. The feed and method are wired; we won't invent a number before the data exists."
+      />
+    ) : (
+      <Stack gap="2xl">
+        <StatBand aria-label="Live-feed delay + crowding highlights">
+          <Card>
+            <Stat value={fmtPct(delay.delayedShare)} label="Vehicles flagged delayed"
+              hint={`CTA delayed flag · ${fmtInt(delay.observations)} observations`} />
+          </Card>
+          <Card>
+            <Stat value={fmtPct(bunch.bunchRate)} label="Bunching rate (crowding proxy)"
+              hint={`${fmtInt(bunch.bunched)} of ${fmtInt(bunch.observations)} multi-vehicle stops`} />
+          </Card>
+          <Card>
+            <Stat value={fmtInt(data.meta.samples)} label="Feed snapshots sampled"
+              hint={`as of ${asOf}`} />
+          </Card>
+        </StatBand>
+
+        <!-- ── Delayed share by mode ────────────────────────────────────── -->
+        <Stack gap="md" as="section" aria-labelledby="delay-heading">
+          <h2 id="delay-heading" class="text-[length:var(--text-lg)] font-medium">Delayed share by mode</h2>
+          <p class="text-[length:var(--text-md)] text-text-muted max-w-[var(--measure)]">
+            Share of sampled vehicle observations CTA flagged as delayed. One vehicle in
+            one snapshot is one observation, so this is a share over the sampling window.
+          </p>
+          {delay.byMode.length > 0 ? (
+            <Card>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <caption class="sr-only">Delayed share by mode</caption>
+                  <thead>
+                    <tr class="border-b border-hairline text-text-muted">
+                      <th scope="col" class="py-2 pr-4 font-medium">Mode</th>
+                      <th scope="col" class="py-2 pr-4 font-medium">Observations</th>
+                      <th scope="col" class="py-2 pr-4 font-medium">Delayed</th>
+                      <th scope="col" class="py-2 font-medium">Delayed share</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {delay.byMode.map((m) => (
+                      <tr class="border-b border-hairline/40">
+                        <td class="py-1.5 pr-4">{modeLabel(m.mode)}</td>
+                        <td class="py-1.5 pr-4 tabular">{fmtInt(m.observations)}</td>
+                        <td class="py-1.5 pr-4 tabular">{fmtInt(m.delayed)}</td>
+                        <td class="py-1.5 tabular">{fmtPct(m.delayedShare)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : (
+            <DataState state="empty" title="No vehicle observations" message="No vehicles were sampled in the current window." />
+          )}
+        </Stack>
+
+        <!-- ── Next-arrival wait distribution ───────────────────────────── -->
+        <Stack gap="md" as="section" aria-labelledby="wait-heading">
+          <h2 id="wait-heading" class="text-[length:var(--text-lg)] font-medium">Next-arrival wait distribution</h2>
+          <p class="text-[length:var(--text-md)] text-text-muted max-w-[var(--measure)]">
+            How far out the sampled arrival predictions were, in minutes. A distribution
+            skewed toward long waits is what riders feel as unreliable service.
+          </p>
+          {arrivals ? (
+            <Card>
+              <DelaysChart client:visible buckets={data.countdown}
+                ariaLabel={`Next-arrival wait distribution for CTA in ${metro.name}.`} />
+            </Card>
+          ) : (
+            <DataState state="empty" title="No arrival predictions" message="No arrivals were sampled in the current window." />
+          )}
+          <details class="rounded-lg border border-hairline bg-surface">
+            <summary class="cursor-pointer px-4 py-3 font-medium">Wait distribution (table)</summary>
+            <div class="overflow-x-auto px-4 pb-4">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">Next-arrival predictions by wait bucket</caption>
+                <thead>
+                  <tr class="border-b border-hairline text-text-muted">
+                    <th scope="col" class="py-2 pr-4 font-medium">Minutes to arrival</th>
+                    <th scope="col" class="py-2 font-medium">Predictions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.countdown.map((b) => (
+                    <tr class="border-b border-hairline/40">
+                      <td class="py-1.5 pr-4">{b.bucket}</td>
+                      <td class="py-1.5 tabular">{fmtInt(b.count)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </Stack>
+
+        <!-- ── Bunching proxy: most-bunched routes ──────────────────────── -->
+        <Stack gap="md" as="section" aria-labelledby="bunch-heading">
+          <h2 id="bunch-heading" class="text-[length:var(--text-lg)] font-medium">Most-bunched routes (crowding proxy)</h2>
+          <p class="text-[length:var(--text-md)] text-text-muted max-w-[var(--measure)]">
+            Routes where same-route vehicles most often arrived within {bunch.gapMin} minutes
+            of each other at a stop — the clearest free-feed signal of uneven, crowd-prone service.
+          </p>
+          {bunch.topRoutes.length > 0 ? (
+            <Card>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                  <caption class="sr-only">Most-bunched routes</caption>
+                  <thead>
+                    <tr class="border-b border-hairline text-text-muted">
+                      <th scope="col" class="py-2 pr-4 font-medium">Route</th>
+                      <th scope="col" class="py-2 pr-4 font-medium">Multi-vehicle stops</th>
+                      <th scope="col" class="py-2 pr-4 font-medium">Bunched</th>
+                      <th scope="col" class="py-2 font-medium">Bunch rate</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bunch.topRoutes.map((r) => (
+                      <tr class="border-b border-hairline/40">
+                        <td class="py-1.5 pr-4">{r.route}</td>
+                        <td class="py-1.5 pr-4 tabular">{fmtInt(r.observations)}</td>
+                        <td class="py-1.5 pr-4 tabular">{fmtInt(r.bunched)}</td>
+                        <td class="py-1.5 tabular">{fmtPct(r.bunchRate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          ) : (
+            <DataState state="empty" title="No bunching observed"
+              message="No stop was sampled with two same-route vehicles at once, so there's no headway to score yet." />
+          )}
+        </Stack>
+      </Stack>
+    )}
+
+    <SourceTag source={data.source.label} id="delays" href={data.source.url}
+      asOf={live ? asOf : null} note={data.source.note} />
+  </Stack>
+</Base>

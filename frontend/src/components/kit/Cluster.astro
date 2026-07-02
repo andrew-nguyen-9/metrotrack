@@ -1,0 +1,22 @@
+---
+// Cluster — a wrapping row with consistent gap (nav items, tag rows, chip groups).
+import type { SpaceKey } from "@/lib/tokens";
+import { spaceVar } from "@/lib/tokens";
+
+interface Props {
+  gap?: SpaceKey;
+  align?: "start" | "center" | "end" | "baseline" | "stretch";
+  justify?: "start" | "center" | "end" | "between";
+  as?: string;
+  class?: string;
+}
+const { gap = "sm", align = "center", justify = "start", as = "div", class: className } = Astro.props as Props;
+const Tag = as as any;
+const justifyMap: Record<string, string> = { start: "flex-start", center: "center", end: "flex-end", between: "space-between" };
+const style = [
+  "display:flex", "flex-wrap:wrap", `gap:${spaceVar(gap)}`,
+  `align-items:${align}`, `justify-content:${justifyMap[justify]}`,
+].join(";");
+---
+
+<Tag class={className} style={style}><slot /></Tag>

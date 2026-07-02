@@ -18,9 +18,11 @@ import os
 import sys
 from datetime import date
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 
 import duckdb
 import psycopg
+import psycopg.conninfo
 
 try:  # dual-mode: `python -m pipeline.load` vs `python pipeline/load.py`
     from . import cli
@@ -48,16 +50,17 @@ on conflict (metro_id) do update set
 
 ROUTE_UPSERT = """
 insert into public.routes
-  (metro_id, authority_id, route_id, short_name, long_name, route_type,
+  (metro_id, authority_id, route_id, short_name, long_name, route_type, mode,
    color, text_color, geom, as_of)
 -- ST_Multi: a route with a single shape stitches to a LINESTRING, which the
 -- MultiLineString column would reject; coerce it to MULTILINESTRING.
-values (%s, %s, %s, %s, %s, %s, %s, %s,
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s,
         extensions.ST_Multi(extensions.ST_GeomFromText(%s, 4326)), %s)
 on conflict (metro_id, authority_id, route_id) do update set
   short_name = excluded.short_name,
   long_name  = excluded.long_name,
   route_type = excluded.route_type,
+  mode       = excluded.mode,
   color      = excluded.color,
   text_color = excluded.text_color,
   geom       = excluded.geom,
@@ -65,10 +68,11 @@ on conflict (metro_id, authority_id, route_id) do update set
 """
 
 STOP_UPSERT = """
-insert into public.stops (metro_id, authority_id, stop_id, name, geom, as_of)
-values (%s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+insert into public.stops (metro_id, authority_id, stop_id, name, mode, geom, as_of)
+values (%s, %s, %s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
 on conflict (metro_id, authority_id, stop_id) do update set
   name  = excluded.name,
+  mode  = excluded.mode,
   geom  = excluded.geom,
   as_of = excluded.as_of
 """
@@ -121,12 +125,61 @@ on conflict (metro_id, h3) do update set
   as_of               = excluded.as_of
 """
 
+CBD_UPSERT = """
+insert into public.cbds (metro_id, cbd_id, name, geom, as_of)
+values (%s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+on conflict (metro_id, cbd_id) do update set
+  name  = excluded.name,
+  geom  = excluded.geom,
+  as_of = excluded.as_of
+"""
+
+TOD_UPSERT = """
+insert into public.hex_tod
+  (metro_id, h3, jobs, population, jobs_prev, pop_prev, jobs_growth_pct,
+   pop_growth_pct, nearest_cbd_id, dist_cbd_m, min_to_cbd, as_of)
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+on conflict (metro_id, h3) do update set
+  jobs            = excluded.jobs,
+  population      = excluded.population,
+  jobs_prev       = excluded.jobs_prev,
+  pop_prev        = excluded.pop_prev,
+  jobs_growth_pct = excluded.jobs_growth_pct,
+  pop_growth_pct  = excluded.pop_growth_pct,
+  nearest_cbd_id  = excluded.nearest_cbd_id,
+  dist_cbd_m      = excluded.dist_cbd_m,
+  min_to_cbd      = excluded.min_to_cbd,
+  as_of           = excluded.as_of
+"""
+
 
 def _db_url() -> str:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
     if not db_url or "[" in db_url:  # unset or still the .env placeholder
         sys.exit("SUPABASE_A_DB_URL not set (or still a placeholder) — cannot load")
     return db_url
+
+
+def build_conninfo(db_url: str) -> str:
+    """URL → libpq keyword conninfo, tolerating ANY raw password.
+
+    psycopg's URI parser percent-decodes the password, so a raw password holding a
+    literal '%' (e.g. '%2U…') dies with "invalid percent-encoded token". We split
+    the URL with stdlib and hand libpq keyword params (no decoding) instead, so the
+    secret never needs pre-encoding. # ponytail: stdlib urlsplit, no dependency.
+    """
+    u = urlsplit(db_url)
+    if u.scheme not in ("postgresql", "postgres"):
+        return db_url  # not a URL we recognize — let libpq have it as-is
+    parts = {"host": u.hostname, "port": u.port, "user": u.username,
+             "password": u.password, "dbname": u.path.lstrip("/") or None}
+    parts.update(parse_qsl(u.query))  # sslmode, etc.
+    parts = {k: v for k, v in parts.items() if v not in (None, "")}
+    return psycopg.conninfo.make_conninfo(**parts)
+
+
+def _connect(db_url: str):
+    return psycopg.connect(build_conninfo(db_url))
 
 
 def sync_metros(db_url: str | None = None) -> int:
@@ -137,7 +190,7 @@ def sync_metros(db_url: str | None = None) -> int:
     for slug in metros_mod.list_metros():
         m = metros_mod.load_metro(slug)  # validates; a bad config fails here, loudly
         rows.append((m.metro_id, m.name, m.slug, m.tz, m.status, *m.bbox, today))
-    with psycopg.connect(db_url) as pg:
+    with _connect(db_url) as pg:
         with pg.cursor() as cur:
             cur.executemany(METRO_UPSERT, rows)
         pg.commit()
@@ -193,10 +246,10 @@ def main() -> int:
     con = duckdb.connect(str(DUCKDB), read_only=True)
     routes = con.execute(
         "select metro_id, authority_id, route_id, short_name, long_name, route_type, "
-        "color, text_color, geom_wkt from gold_routes"
+        "mode, color, text_color, geom_wkt from gold_routes"
     ).fetchall()
     stops = con.execute(
-        "select metro_id, authority_id, stop_id, name, geom_wkt from gold_stops"
+        "select metro_id, authority_id, stop_id, name, mode, geom_wkt from gold_stops"
     ).fetchall()
     hexes = con.execute(
         "select metro_id, h3, resolution, jobs, population, jobs_per_1k_pop, geom_wkt "
@@ -213,16 +266,23 @@ def main() -> int:
     access = con.execute(
         "select metro_id, h3, jobs_reachable_walk, walk_radius_m from gold_hex_access"
     ).fetchall()
+    cbds = con.execute(
+        "select metro_id, cbd_id, name, geom_wkt from gold_cbds"
+    ).fetchall()
+    tod = con.execute(
+        "select metro_id, h3, jobs, population, jobs_prev, pop_prev, jobs_growth_pct, "
+        "pop_growth_pct, nearest_cbd_id, dist_cbd_m, min_to_cbd from gold_hex_tod"
+    ).fetchall()
     con.close()
 
-    built = {r[0] for r in routes + stops + hexes + finances + vacancy + access}
+    built = {r[0] for r in routes + stops + hexes + finances + vacancy + access + cbds + tod}
     if built and built != {metro}:
         sys.exit(f"gold metro_id {sorted(built)} != --metro={metro} — rebuild dbt "
                  f"with --vars '{{metro: {metro}}}' before loading")
 
     # gold rows already lead with metro_id; append as_of=today (the load date) at the
     # back. vacancy carries its own as_of in the natural key, so it gets metro_id only.
-    with psycopg.connect(db_url) as pg:
+    with _connect(db_url) as pg:
         with pg.cursor() as cur:
             cur.executemany(ROUTE_UPSERT,   [(*r, today) for r in routes])
             cur.executemany(STOP_UPSERT,    [(*r, today) for r in stops])
@@ -230,11 +290,14 @@ def main() -> int:
             cur.executemany(FINANCE_UPSERT, [(*r, today) for r in finances])
             cur.executemany(VACANCY_UPSERT, list(vacancy))
             cur.executemany(ACCESS_UPSERT,  [(*r, today) for r in access])
+            cur.executemany(CBD_UPSERT,     [(*r, today) for r in cbds])
+            cur.executemany(TOD_UPSERT,     [(*r, today) for r in tod])
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
           f"{len(hexes)} hex cells, {len(finances)} finance rows, "
-          f"{len(vacancy)} vacancy rows, {len(access)} access rows → Project A "
+          f"{len(vacancy)} vacancy rows, {len(access)} access rows, "
+          f"{len(cbds)} CBD(s), {len(tod)} TOD hex rows → Project A "
           f"(metro={metro})")
     return 0
 

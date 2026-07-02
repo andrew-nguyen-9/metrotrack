@@ -1,8 +1,8 @@
 {
   "bbox": [
     -88.6175,
-    41.4183333,
-    -87.5477778,
+    41.4594444,
+    -87.54491571,
     42.5858333
   ],
   "routes": [
@@ -12,6 +12,7 @@
       "short_name": "1",
       "long_name": "Bronzeville/Union Station",
       "route_type": 3,
+      "mode": "bus",
       "color": "99999C"
     },
     {
@@ -20,6 +21,7 @@
       "short_name": "2",
       "long_name": "Hyde Park Express",
       "route_type": 3,
+      "mode": "bus",
       "color": "b71234"
     },
     {
@@ -28,6 +30,7 @@
       "short_name": "3",
       "long_name": "King Drive",
       "route_type": 3,
+      "mode": "bus",
       "color": "99999C"
     },
     {
@@ -36,6 +39,7 @@
       "short_name": "4",
       "long_name": "Cottage Grove",
       "route_type": 3,
+      "mode": "bus",
       "color": "414145"
     },
     {
@@ -44,6 +48,7 @@
       "short_name": "6",
       "long_name": "Jackson Park Express",
       "route_type": 3,
+      "mode": "bus",
       "color": "b71234"
     },
     {
@@ -52,7 +57,62 @@
       "short_name": "7",
       "long_name": "Harrison",
       "route_type": 3,
+      "mode": "bus",
       "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "8",
+      "short_name": "8",
+      "long_name": "Halsted",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "8A",
+      "short_name": "8A",
+      "long_name": "South Halsted",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "9",
+      "short_name": "9",
+      "long_name": "Ashland",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "414145"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Blue",
+      "short_name": null,
+      "long_name": "Blue Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "00A1DE"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Brn",
+      "short_name": null,
+      "long_name": "Brown Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "62361B"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "G",
+      "short_name": null,
+      "long_name": "Green Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "009B3A"
     },
     {
       "authority_id": "cta",
@@ -60,7 +120,44 @@
       "short_name": "N5",
       "long_name": "South Shore Night Bus",
       "route_type": 3,
+      "mode": "bus",
       "color": "99999C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Org",
+      "short_name": null,
+      "long_name": "Orange Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "F9461C"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "P",
+      "short_name": null,
+      "long_name": "Purple Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "522398"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Pink",
+      "short_name": null,
+      "long_name": "Pink Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "E27EA6"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Red",
+      "short_name": null,
+      "long_name": "Red Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "C60C30"
     },
     {
       "authority_id": "cta",
@@ -68,7 +165,26 @@
       "short_name": "X4",
       "long_name": "Cottage Grove Express",
       "route_type": 3,
+      "mode": "bus",
       "color": "b71234"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "X9",
+      "short_name": "X9",
+      "long_name": "Ashland Express",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "b71234"
+    },
+    {
+      "authority_id": "cta",
+      "route_id": "Y",
+      "short_name": null,
+      "long_name": "Yellow Line",
+      "route_type": 1,
+      "mode": "rail",
+      "color": "F9E300"
     },
     {
       "authority_id": "metra",
@@ -76,6 +192,7 @@
       "short_name": "BNSF",
       "long_name": "Burlington Northern",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "29C233"
     },
     {
@@ -84,6 +201,7 @@
       "short_name": "HC",
       "long_name": "Heritage Corridor",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "550E0C"
     },
     {
@@ -92,6 +210,7 @@
       "short_name": "MD-N",
       "long_name": "Milwaukee North",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "CC5500"
     },
     {
@@ -100,6 +219,7 @@
       "short_name": "MD-W",
       "long_name": "Milwaukee West",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "F1AD0E"
     },
     {
@@ -108,6 +228,7 @@
       "short_name": "ME",
       "long_name": "Metra Electric",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "EB5C00"
     },
     {
@@ -116,6 +237,7 @@
       "short_name": "NCS",
       "long_name": "North Central Service",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "9785BC"
     },
     {
@@ -124,6 +246,7 @@
       "short_name": "RI",
       "long_name": "Rock Island",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "E02400"
     },
     {
@@ -132,7 +255,35 @@
       "short_name": "SWS",
       "long_name": "Southwest Service",
       "route_type": 2,
+      "mode": "commuter-rail",
       "color": "0042A8"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "UP-N",
+      "short_name": "UP-N",
+      "long_name": "Union Pacific North",
+      "route_type": 2,
+      "mode": "commuter-rail",
+      "color": "008000"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "UP-NW",
+      "short_name": "UP-NW",
+      "long_name": "Union Pacific Northwest",
+      "route_type": 2,
+      "mode": "commuter-rail",
+      "color": "FFE600"
+    },
+    {
+      "authority_id": "metra",
+      "route_id": "UP-W",
+      "short_name": "UP-W",
+      "long_name": "Union Pacific West",
+      "route_type": 2,
+      "mode": "commuter-rail",
+      "color": "FE8D81"
     },
     {
       "authority_id": "pace",
@@ -140,6 +291,7 @@
       "short_name": null,
       "long_name": "Pulse Milwaukee Line",
       "route_type": 3,
+      "mode": "bus",
       "color": "814C9E"
     },
     {
@@ -148,6 +300,7 @@
       "short_name": null,
       "long_name": "Pulse Dempster Line",
       "route_type": 3,
+      "mode": "bus",
       "color": "814C9E"
     },
     {
@@ -156,6 +309,7 @@
       "short_name": "208",
       "long_name": "Golf Road",
       "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     },
     {
@@ -164,6 +318,7 @@
       "short_name": "209",
       "long_name": "Busse Highway",
       "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     },
     {
@@ -172,6 +327,7 @@
       "short_name": "210",
       "long_name": "Lincoln Avenue",
       "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     },
     {
@@ -180,6 +336,7 @@
       "short_name": "213",
       "long_name": "Green Bay Road",
       "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     },
     {
@@ -188,6 +345,7 @@
       "short_name": "215",
       "long_name": "Crawford-Howard",
       "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     },
     {
@@ -196,15 +354,52 @@
       "short_name": "221",
       "long_name": "Wolf Road",
       "route_type": 3,
+      "mode": "bus",
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "223",
+      "short_name": "223",
+      "long_name": "Elk Grove - Rosemont CTA Station",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "225",
+      "short_name": "225",
+      "long_name": "Central - Howard",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "226",
+      "short_name": "226",
+      "long_name": "Oakton Street",
+      "route_type": 3,
+      "mode": "bus",
+      "color": "00539F"
+    },
+    {
+      "authority_id": "pace",
+      "route_id": "230",
+      "short_name": "230",
+      "long_name": "South Des Plaines",
+      "route_type": 3,
+      "mode": "bus",
       "color": "00539F"
     }
   ],
   "stopCounts": {
-    "cta": 320,
-    "metra": 241,
-    "pace": 320
+    "cta": 1148,
+    "metra": 204,
+    "pace": 1102
   },
-  "stopTotal": 881,
+  "stopTotal": 2454,
   "hex": {
     "count": 1934,
     "breaks": {
@@ -225,6 +420,12 @@
         21043,
         32524,
         44697
+      ],
+      "cbd_time": [
+        13,
+        27,
+        46,
+        73
       ]
     },
     "topJobs": [
@@ -232,61 +433,71 @@
         "h3": "882664c1a9fffff",
         "jobs": 349153,
         "population": 8810,
-        "access": 630299
+        "access": 630299,
+        "cbd_min": 0.4
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
         "population": 17754,
-        "access": 527089
+        "access": 527089,
+        "cbd_min": 2.3
       },
       {
         "h3": "882664c1a1fffff",
         "jobs": 57580,
         "population": 7084,
-        "access": 537039
+        "access": 537039,
+        "cbd_min": 1.5
       },
       {
         "h3": "882664c1e7fffff",
         "jobs": 51859,
         "population": 10129,
-        "access": 582335
+        "access": 582335,
+        "cbd_min": 0.9
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664c1a5fffff",
         "jobs": 40630,
         "population": 8016,
-        "access": 168283
+        "access": 168283,
+        "cbd_min": 4.6
       },
       {
         "h3": "88275934edfffff",
         "jobs": 37820,
         "population": 0,
-        "access": 77656
+        "access": 77656,
+        "cbd_min": 76.5
       },
       {
         "h3": "882664c1adfffff",
         "jobs": 34968,
         "population": 6248,
-        "access": 255334
+        "access": 255334,
+        "cbd_min": 2.8
       },
       {
         "h3": "8827592249fffff",
         "jobs": 29481,
         "population": 2030,
-        "access": 37169
+        "access": 37169,
+        "cbd_min": 119.0
       },
       {
         "h3": "88275930abfffff",
         "jobs": 26757,
         "population": 3621,
-        "access": 40448
+        "access": 40448,
+        "cbd_min": 115.3
       }
     ],
     "topPopulation": [
@@ -294,61 +505,71 @@
         "h3": "882664c1edfffff",
         "jobs": 8697,
         "population": 20596,
-        "access": 548483
+        "access": 548483,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664c10dfffff",
         "jobs": 2747,
         "population": 18264,
-        "access": 160236
+        "access": 160236,
+        "cbd_min": 3.9
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
         "population": 17754,
-        "access": 527089
+        "access": 527089,
+        "cbd_min": 2.3
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664c16bfffff",
         "jobs": 2623,
         "population": 14917,
-        "access": 134924
+        "access": 134924,
+        "cbd_min": 5.2
       },
       {
         "h3": "882664c13bfffff",
         "jobs": 3930,
         "population": 13944,
-        "access": 211079
+        "access": 211079,
+        "cbd_min": 1.7
       },
       {
         "h3": "882664d8c3fffff",
         "jobs": 5821,
         "population": 13310,
-        "access": 65537
+        "access": 65537,
+        "cbd_min": 8.1
       },
       {
         "h3": "882664c1b5fffff",
         "jobs": 4618,
         "population": 12969,
-        "access": 527218
+        "access": 527218,
+        "cbd_min": 1.2
       },
       {
         "h3": "882664c101fffff",
         "jobs": 2304,
         "population": 12625,
-        "access": 210978
+        "access": 210978,
+        "cbd_min": 2.5
       },
       {
         "h3": "882664c1e5fffff",
         "jobs": 12660,
         "population": 12100,
-        "access": 220875
+        "access": 220875,
+        "cbd_min": 2.2
       }
     ],
     "topAccess": [
@@ -356,62 +577,80 @@
         "h3": "882664c1a9fffff",
         "jobs": 349153,
         "population": 8810,
-        "access": 630299
+        "access": 630299,
+        "cbd_min": 0.4
       },
       {
         "h3": "882664c1e7fffff",
         "jobs": 51859,
         "population": 10129,
-        "access": 582335
+        "access": 582335,
+        "cbd_min": 0.9
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664cf5dfffff",
         "jobs": 2187,
         "population": 2648,
-        "access": 574469
+        "access": 574469,
+        "cbd_min": 0.7
       },
       {
         "h3": "882664cf13fffff",
         "jobs": 234,
         "population": 2443,
-        "access": 573972
+        "access": 573972,
+        "cbd_min": 1.2
       },
       {
         "h3": "882664cf4bfffff",
         "jobs": 2337,
         "population": 4226,
-        "access": 552215
+        "access": 552215,
+        "cbd_min": 0.7
       },
       {
         "h3": "882664cf11fffff",
         "jobs": 311,
         "population": 704,
-        "access": 550116
+        "access": 550116,
+        "cbd_min": 0.8
       },
       {
         "h3": "882664c1edfffff",
         "jobs": 8697,
         "population": 20596,
-        "access": 548483
+        "access": 548483,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664cf57fffff",
         "jobs": 60,
         "population": 689,
-        "access": 545276
+        "access": 545276,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664cc6bfffff",
         "jobs": 340,
         "population": 478,
-        "access": 539944
+        "access": 539944,
+        "cbd_min": 1.0
       }
     ]
-  }
+  },
+  "cbds": [
+    {
+      "cbd_id": "loop",
+      "name": "The Loop",
+      "lon": -87.6298,
+      "lat": 41.8786
+    }
+  ]
 }
