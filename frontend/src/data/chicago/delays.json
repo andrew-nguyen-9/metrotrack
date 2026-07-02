@@ -1,0 +1,49 @@
+{
+  "source": {
+    "label": "CTA Bus Tracker + Train Tracker (live feed, sampled) \u2014 MetroTrack E11 append log",
+    "url": "https://www.transitchicago.com/developers/",
+    "note": "Delay = CTA's own delayed flag (not a schedule deviation \u2014 the free prediction feed carries no scheduled time). Crowding = a bunching proxy from arrival-prediction headways."
+  },
+  "meta": {
+    "samples": 0,
+    "firstGenerated": null,
+    "lastGenerated": null,
+    "vehicleObservations": 0,
+    "arrivalObservations": 0
+  },
+  "delay": {
+    "byMode": [],
+    "observations": 0,
+    "delayed": 0,
+    "delayedShare": 0.0
+  },
+  "countdown": [
+    {
+      "bucket": "DUE",
+      "count": 0
+    },
+    {
+      "bucket": "1\u20135",
+      "count": 0
+    },
+    {
+      "bucket": "6\u201310",
+      "count": 0
+    },
+    {
+      "bucket": "11\u201315",
+      "count": 0
+    },
+    {
+      "bucket": "16+",
+      "count": 0
+    }
+  ],
+  "bunching": {
+    "observations": 0,
+    "bunched": 0,
+    "bunchRate": 0.0,
+    "gapMin": 2,
+    "topRoutes": []
+  }
+}

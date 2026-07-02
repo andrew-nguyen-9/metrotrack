@@ -7,6 +7,7 @@ import type { TransitData } from "./transit";
 import type { FundingData } from "./funding";
 import type { HiringData } from "./hiring";
 import type { RidershipData } from "./ridership";
+import type { DelaysData } from "./delays";
 import type { DemographicsData } from "./demographics";
 import type { TodData } from "./tod";
 
@@ -63,6 +64,7 @@ const transitFiles = import.meta.glob<TransitData>("../data/*/transit.json", { e
 const fundingFiles = import.meta.glob<FundingData>("../data/*/funding.json", { eager: true, import: "default" });
 const hiringFiles = import.meta.glob<HiringData>("../data/*/hiring.json", { eager: true, import: "default" });
 const ridershipFiles = import.meta.glob<RidershipData>("../data/*/ridership.json", { eager: true, import: "default" });
+const delaysFiles = import.meta.glob<DelaysData>("../data/*/delays.json", { eager: true, import: "default" });
 const demographicsFiles = import.meta.glob<DemographicsData>("../data/*/demographics.json", { eager: true, import: "default" });
 const todFiles = import.meta.glob<TodData>("../data/*/tod.json", { eager: true, import: "default" });
 
@@ -76,6 +78,7 @@ export const transitData = (slug: string): TransitData => pick(transitFiles, slu
 export const fundingData = (slug: string): FundingData => pick(fundingFiles, slug, "funding");
 export const hiringData = (slug: string): HiringData => pick(hiringFiles, slug, "hiring");
 export const ridershipData = (slug: string): RidershipData => pick(ridershipFiles, slug, "ridership");
+export const delaysData = (slug: string): DelaysData => pick(delaysFiles, slug, "delays");
 export const demographicsData = (slug: string): DemographicsData => pick(demographicsFiles, slug, "demographics");
 export const todData = (slug: string): TodData => pick(todFiles, slug, "tod");
 
