@@ -40,7 +40,8 @@ def export() -> None:
 
     con = duckdb.connect(str(DUCKDB), read_only=True)
     cols = ["authority_id", "fiscal_year", "actual_audited", "fare_revenue",
-            "unlinked_trips", "rta_kind", "rta_amount", "farebox_recovery"]
+            "unlinked_trips", "rta_kind", "rta_amount", "farebox_recovery",
+            "subsidy", "subsidy_per_rider", "cost_per_rider"]
     rows = con.execute(
         f"select {', '.join(cols)} from gold_funding order by authority_id, fiscal_year"
     ).fetchall()
