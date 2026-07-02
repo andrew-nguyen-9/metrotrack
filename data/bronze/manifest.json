@@ -17,6 +17,24 @@
     "table": "lodes_wac",
     "written_at": "2026-06-27T23:37:59.573111+00:00"
   },
+  "chicago/cta/ridership_bus": {
+    "metro": "chicago",
+    "parquet": "data/bronze/chicago/cta/ridership_bus.parquet",
+    "rows": 8077,
+    "sha256": "383f2bbfc3e7cfd83c6306f14b98c0c9fa2005a9d7ec787df85b2968d085b168",
+    "source": "cta",
+    "table": "ridership_bus",
+    "written_at": "2026-07-02T05:08:59.805409+00:00"
+  },
+  "chicago/cta/ridership_rail": {
+    "metro": "chicago",
+    "parquet": "data/bronze/chicago/cta/ridership_rail.parquet",
+    "rows": 9177,
+    "sha256": "253d6ad1100de3b59deb62a62b181e1054e80679a48caa0b0a063d5032efbe04",
+    "source": "cta",
+    "table": "ridership_rail",
+    "written_at": "2026-07-02T05:09:00.669927+00:00"
+  },
   "chicago/cta/routes": {
     "metro": "chicago",
     "parquet": "data/bronze/chicago/cta/routes.parquet",

@@ -1,0 +1,1684 @@
+{
+  "sources": {
+    "line": {
+      "label": "CTA \u2014 Ridership, Bus Routes, Monthly Day-Type Averages & Totals (Chicago Data Portal)",
+      "url": "https://data.cityofchicago.org/Transportation/CTA-Ridership-Bus-Routes-Monthly-Day-Type-Averages/bynn-gwxy",
+      "note": "Monthly total boardings per bus route. A route is a line, so this is ridership by line."
+    },
+    "stop": {
+      "label": "CTA \u2014 Ridership, 'L' Station Entries, Monthly Day-Type Averages & Totals (Chicago Data Portal)",
+      "url": "https://data.cityofchicago.org/Transportation/CTA-Ridership-L-Station-Entries-Monthly-Day-Type-A/t2rn-p8d7",
+      "note": "Monthly total entries per rail station. A station is a stop, so this is ridership by stop."
+    }
+  },
+  "latestMonth": {
+    "line": "2026-04-01",
+    "stop": "2026-04-01"
+  },
+  "trend": [
+    {
+      "month": "2021-01-01",
+      "bus": 7081018,
+      "rail": 2965081
+    },
+    {
+      "month": "2021-02-01",
+      "bus": 6740264,
+      "rail": 3015927
+    },
+    {
+      "month": "2021-03-01",
+      "bus": 8782324,
+      "rail": 3898318
+    },
+    {
+      "month": "2021-04-01",
+      "bus": 8792786,
+      "rail": 4112171
+    },
+    {
+      "month": "2021-05-01",
+      "bus": 9114829,
+      "rail": 4768231
+    },
+    {
+      "month": "2021-06-01",
+      "bus": 9763897,
+      "rail": 5669251
+    },
+    {
+      "month": "2021-07-01",
+      "bus": 10515015,
+      "rail": 6795339
+    },
+    {
+      "month": "2021-08-01",
+      "bus": 10868850,
+      "rail": 6858883
+    },
+    {
+      "month": "2021-09-01",
+      "bus": 11976994,
+      "rail": 7680638
+    },
+    {
+      "month": "2021-10-01",
+      "bus": 11803099,
+      "rail": 7675966
+    },
+    {
+      "month": "2021-11-01",
+      "bus": 10836483,
+      "rail": 6779584
+    },
+    {
+      "month": "2021-12-01",
+      "bus": 10103535,
+      "rail": 5950298
+    },
+    {
+      "month": "2022-01-01",
+      "bus": 8526906,
+      "rail": 4815276
+    },
+    {
+      "month": "2022-02-01",
+      "bus": 9598193,
+      "rail": 5541207
+    },
+    {
+      "month": "2022-03-01",
+      "bus": 11995742,
+      "rail": 7110938
+    },
+    {
+      "month": "2022-04-01",
+      "bus": 11397673,
+      "rail": 6967276
+    },
+    {
+      "month": "2022-05-01",
+      "bus": 12116162,
+      "rail": 7522839
+    },
+    {
+      "month": "2022-06-01",
+      "bus": 11908456,
+      "rail": 7905758
+    },
+    {
+      "month": "2022-07-01",
+      "bus": 11430728,
+      "rail": 7887694
+    },
+    {
+      "month": "2022-08-01",
+      "bus": 12502252,
+      "rail": 8143124
+    },
+    {
+      "month": "2022-09-01",
+      "bus": 13127573,
+      "rail": 8643576
+    },
+    {
+      "month": "2022-10-01",
+      "bus": 13200133,
+      "rail": 8706636
+    },
+    {
+      "month": "2022-11-01",
+      "bus": 11949111,
+      "rail": 7495657
+    },
+    {
+      "month": "2022-12-01",
+      "bus": 10988726,
+      "rail": 6566927
+    },
+    {
+      "month": "2023-01-01",
+      "bus": 11585468,
+      "rail": 6884790
+    },
+    {
+      "month": "2023-02-01",
+      "bus": 11516626,
+      "rail": 6603029
+    },
+    {
+      "month": "2023-03-01",
+      "bus": 13386648,
+      "rail": 7904152
+    },
+    {
+      "month": "2023-04-01",
+      "bus": 12662154,
+      "rail": 7797900
+    },
+    {
+      "month": "2023-05-01",
+      "bus": 13975421,
+      "rail": 8635413
+    },
+    {
+      "month": "2023-06-01",
+      "bus": 13060690,
+      "rail": 8832338
+    },
+    {
+      "month": "2023-07-01",
+      "bus": 12893284,
+      "rail": 8511582
+    },
+    {
+      "month": "2023-08-01",
+      "bus": 14413544,
+      "rail": 9444418
+    },
+    {
+      "month": "2023-09-01",
+      "bus": 14673288,
+      "rail": 9411771
+    },
+    {
+      "month": "2023-10-01",
+      "bus": 15152779,
+      "rail": 9834999
+    },
+    {
+      "month": "2023-11-01",
+      "bus": 13760961,
+      "rail": 8488322
+    },
+    {
+      "month": "2023-12-01",
+      "bus": 13151732,
+      "rail": 7494166
+    },
+    {
+      "month": "2024-01-01",
+      "bus": 12759891,
+      "rail": 7264630
+    },
+    {
+      "month": "2024-02-01",
+      "bus": 14298541,
+      "rail": 7911337
+    },
+    {
+      "month": "2024-03-01",
+      "bus": 14639504,
+      "rail": 8576406
+    },
+    {
+      "month": "2024-04-01",
+      "bus": 15497763,
+      "rail": 8873397
+    },
+    {
+      "month": "2024-05-01",
+      "bus": 16277160,
+      "rail": 9585547
+    },
+    {
+      "month": "2024-06-01",
+      "bus": 14646076,
+      "rail": 9220836
+    },
+    {
+      "month": "2024-07-01",
+      "bus": 15219774,
+      "rail": 9521616
+    },
+    {
+      "month": "2024-08-01",
+      "bus": 15411340,
+      "rail": 10001372
+    },
+    {
+      "month": "2024-09-01",
+      "bus": 16071121,
+      "rail": 9947814
+    },
+    {
+      "month": "2024-10-01",
+      "bus": 17406895,
+      "rail": 10748721
+    },
+    {
+      "month": "2024-11-01",
+      "bus": 14625545,
+      "rail": 8803844
+    },
+    {
+      "month": "2024-12-01",
+      "bus": 13592887,
+      "rail": 7761662
+    },
+    {
+      "month": "2025-01-01",
+      "bus": 14779512,
+      "rail": 8001344
+    },
+    {
+      "month": "2025-02-01",
+      "bus": 14736376,
+      "rail": 7647462
+    },
+    {
+      "month": "2025-03-01",
+      "bus": 16846763,
+      "rail": 9289176
+    },
+    {
+      "month": "2025-04-01",
+      "bus": 17463592,
+      "rail": 9812871
+    },
+    {
+      "month": "2025-05-01",
+      "bus": 17723360,
+      "rail": 10202377
+    },
+    {
+      "month": "2025-06-01",
+      "bus": 16435283,
+      "rail": 10241804
+    },
+    {
+      "month": "2025-07-01",
+      "bus": 16909375,
+      "rail": 10758377
+    },
+    {
+      "month": "2025-08-01",
+      "bus": 17438158,
+      "rail": 11233446
+    },
+    {
+      "month": "2025-09-01",
+      "bus": 17752187,
+      "rail": 11084571
+    },
+    {
+      "month": "2025-10-01",
+      "bus": 18298745,
+      "rail": 11593208
+    },
+    {
+      "month": "2025-11-01",
+      "bus": 15292917,
+      "rail": 9219099
+    },
+    {
+      "month": "2025-12-01",
+      "bus": 14890527,
+      "rail": 8405548
+    },
+    {
+      "month": "2026-01-01",
+      "bus": 14786504,
+      "rail": 8198854
+    },
+    {
+      "month": "2026-02-01",
+      "bus": 15557246,
+      "rail": 8384787
+    },
+    {
+      "month": "2026-03-01",
+      "bus": 16966261,
+      "rail": 9814144
+    },
+    {
+      "month": "2026-04-01",
+      "bus": 17797910,
+      "rail": 10083327
+    }
+  ],
+  "byLine": [
+    {
+      "route": "9",
+      "route_name": "Ashland",
+      "rides": 553115
+    },
+    {
+      "route": "53",
+      "route_name": "Pulaski",
+      "rides": 513188
+    },
+    {
+      "route": "79",
+      "route_name": "79th",
+      "rides": 505180
+    },
+    {
+      "route": "8",
+      "route_name": "Halsted",
+      "rides": 470376
+    },
+    {
+      "route": "66",
+      "route_name": "Chicago",
+      "rides": 457507
+    },
+    {
+      "route": "3",
+      "route_name": "King Drive",
+      "rides": 442183
+    },
+    {
+      "route": "4",
+      "route_name": "Cottage Grove",
+      "rides": 429142
+    },
+    {
+      "route": "77",
+      "route_name": "Belmont",
+      "rides": 426140
+    },
+    {
+      "route": "22",
+      "route_name": "Clark",
+      "rides": 416196
+    },
+    {
+      "route": "49",
+      "route_name": "Western",
+      "rides": 415915
+    },
+    {
+      "route": "20",
+      "route_name": "Madison",
+      "rides": 399331
+    },
+    {
+      "route": "82",
+      "route_name": "Kimball-Homan",
+      "rides": 396925
+    },
+    {
+      "route": "151",
+      "route_name": "Sheridan",
+      "rides": 373015
+    },
+    {
+      "route": "63",
+      "route_name": "63rd",
+      "rides": 368626
+    },
+    {
+      "route": "72",
+      "route_name": "North",
+      "rides": 337740
+    },
+    {
+      "route": "60",
+      "route_name": "Blue Island/26th",
+      "rides": 334552
+    },
+    {
+      "route": "36",
+      "route_name": "Broadway",
+      "rides": 312957
+    },
+    {
+      "route": "12",
+      "route_name": "Roosevelt",
+      "rides": 294123
+    },
+    {
+      "route": "146",
+      "route_name": "Inner Lake Shore/Michigan Express",
+      "rides": 290634
+    },
+    {
+      "route": "147",
+      "route_name": "Outer DuSable Lake Shore Express",
+      "rides": 278428
+    },
+    {
+      "route": "74",
+      "route_name": "Fullerton",
+      "rides": 272612
+    },
+    {
+      "route": "81",
+      "route_name": "Lawrence",
+      "rides": 272293
+    },
+    {
+      "route": "47",
+      "route_name": "47th",
+      "rides": 263111
+    },
+    {
+      "route": "76",
+      "route_name": "Diversey",
+      "rides": 250762
+    },
+    {
+      "route": "94",
+      "route_name": "California",
+      "rides": 248466
+    },
+    {
+      "route": "54",
+      "route_name": "Cicero",
+      "rides": 245309
+    },
+    {
+      "route": "29",
+      "route_name": "State",
+      "rides": 239971
+    },
+    {
+      "route": "50",
+      "route_name": "Damen",
+      "rides": 236560
+    },
+    {
+      "route": "80",
+      "route_name": "Irving Park",
+      "rides": 232786
+    },
+    {
+      "route": "55",
+      "route_name": "Garfield",
+      "rides": 226176
+    },
+    {
+      "route": "85",
+      "route_name": "Central",
+      "rides": 224209
+    },
+    {
+      "route": "87",
+      "route_name": "87th",
+      "rides": 220221
+    },
+    {
+      "route": "J14",
+      "route_name": "Jeffery Jump",
+      "rides": 218780
+    },
+    {
+      "route": "21",
+      "route_name": "Cermak",
+      "rides": 214317
+    },
+    {
+      "route": "62",
+      "route_name": "Archer",
+      "rides": 213511
+    },
+    {
+      "route": "71",
+      "route_name": "71st/South Shore",
+      "rides": 209417
+    },
+    {
+      "route": "152",
+      "route_name": "Addison",
+      "rides": 205913
+    },
+    {
+      "route": "52",
+      "route_name": "Kedzie",
+      "rides": 198903
+    },
+    {
+      "route": "67",
+      "route_name": "67th-69th-71st",
+      "rides": 198630
+    },
+    {
+      "route": "6",
+      "route_name": "Jackson Park Express",
+      "rides": 197646
+    },
+    {
+      "route": "70",
+      "route_name": "Division",
+      "rides": 193757
+    },
+    {
+      "route": "56",
+      "route_name": "Milwaukee",
+      "rides": 189389
+    },
+    {
+      "route": "78",
+      "route_name": "Montrose",
+      "rides": 174387
+    },
+    {
+      "route": "65",
+      "route_name": "Grand",
+      "rides": 171340
+    },
+    {
+      "route": "75",
+      "route_name": "74th-75th",
+      "rides": 160528
+    },
+    {
+      "route": "15",
+      "route_name": "Jeffery Local",
+      "rides": 154377
+    },
+    {
+      "route": "157",
+      "route_name": "Streeterville/Taylor",
+      "rides": 145630
+    },
+    {
+      "route": "92",
+      "route_name": "Foster",
+      "rides": 144850
+    },
+    {
+      "route": "155",
+      "route_name": "Devon",
+      "rides": 144391
+    },
+    {
+      "route": "95",
+      "route_name": "95th",
+      "rides": 140360
+    },
+    {
+      "route": "X9",
+      "route_name": "Ashland Express",
+      "rides": 124327
+    },
+    {
+      "route": "73",
+      "route_name": "Armitage",
+      "rides": 117592
+    },
+    {
+      "route": "91",
+      "route_name": "Austin",
+      "rides": 117200
+    },
+    {
+      "route": "28",
+      "route_name": "Stony Island",
+      "rides": 116432
+    },
+    {
+      "route": "126",
+      "route_name": "Jackson",
+      "rides": 113265
+    },
+    {
+      "route": "7",
+      "route_name": "Harrison",
+      "rides": 111244
+    },
+    {
+      "route": "93",
+      "route_name": "California/Dodge",
+      "rides": 105978
+    },
+    {
+      "route": "49B",
+      "route_name": "North Western",
+      "rides": 101749
+    },
+    {
+      "route": "156",
+      "route_name": "LaSalle",
+      "rides": 101026
+    },
+    {
+      "route": "35",
+      "route_name": "31st/35th",
+      "rides": 100892
+    },
+    {
+      "route": "34",
+      "route_name": "South Michigan",
+      "rides": 100565
+    },
+    {
+      "route": "18",
+      "route_name": "16th/18th",
+      "rides": 99260
+    },
+    {
+      "route": "X49",
+      "route_name": "Western Express",
+      "rides": 98802
+    },
+    {
+      "route": "90",
+      "route_name": "Harlem",
+      "rides": 92476
+    },
+    {
+      "route": "52A",
+      "route_name": "South Kedzie",
+      "rides": 86821
+    },
+    {
+      "route": "84",
+      "route_name": "Peterson",
+      "rides": 80857
+    },
+    {
+      "route": "53A",
+      "route_name": "South Pulaski",
+      "rides": 76150
+    },
+    {
+      "route": "26",
+      "route_name": "South Shore Express",
+      "rides": 72265
+    },
+    {
+      "route": "119",
+      "route_name": "Michigan/119th",
+      "rides": 70636
+    },
+    {
+      "route": "44",
+      "route_name": "Wallace-Racine",
+      "rides": 69831
+    },
+    {
+      "route": "8A",
+      "route_name": "South Halsted",
+      "rides": 66950
+    },
+    {
+      "route": "30",
+      "route_name": "South Chicago",
+      "rides": 66211
+    },
+    {
+      "route": "X4",
+      "route_name": "Cottage Grove Express",
+      "rides": 65680
+    },
+    {
+      "route": "59",
+      "route_name": "59th/61st",
+      "rides": 65139
+    },
+    {
+      "route": "97",
+      "route_name": "Skokie",
+      "rides": 58162
+    },
+    {
+      "route": "111",
+      "route_name": "111th/King Drive",
+      "rides": 56798
+    },
+    {
+      "route": "54B",
+      "route_name": "South Cicero",
+      "rides": 56103
+    },
+    {
+      "route": "86",
+      "route_name": "Narragansett/Ridgeland",
+      "rides": 52010
+    },
+    {
+      "route": "172",
+      "route_name": "U. of Chicago/Kenwood",
+      "rides": 47838
+    },
+    {
+      "route": "115",
+      "route_name": "Pullman/115th",
+      "rides": 46818
+    },
+    {
+      "route": "57",
+      "route_name": "Laramie",
+      "rides": 45609
+    },
+    {
+      "route": "24",
+      "route_name": "Wentworth",
+      "rides": 45241
+    },
+    {
+      "route": "135",
+      "route_name": "Clarendon/LaSalle Express",
+      "rides": 44098
+    },
+    {
+      "route": "2",
+      "route_name": "Hyde Park Express",
+      "rides": 43413
+    },
+    {
+      "route": "134",
+      "route_name": "Stockton/LaSalle Express",
+      "rides": 42629
+    },
+    {
+      "route": "103",
+      "route_name": "West 103rd",
+      "rides": 41331
+    },
+    {
+      "route": "81W",
+      "route_name": "West Lawrence",
+      "rides": 39951
+    },
+    {
+      "route": "37",
+      "route_name": "Sedgwick",
+      "rides": 39046
+    },
+    {
+      "route": "39",
+      "route_name": "Pershing",
+      "rides": 34897
+    },
+    {
+      "route": "201",
+      "route_name": "Central/Ridge",
+      "rides": 34796
+    },
+    {
+      "route": "63W",
+      "route_name": "West 63rd",
+      "rides": 32482
+    },
+    {
+      "route": "148",
+      "route_name": "Clarendon/Michigan Express",
+      "rides": 32406
+    },
+    {
+      "route": "112",
+      "route_name": "Vincennes/111th",
+      "rides": 32374
+    },
+    {
+      "route": "124",
+      "route_name": "Navy Pier",
+      "rides": 31610
+    },
+    {
+      "route": "51",
+      "route_name": "51st",
+      "rides": 30017
+    },
+    {
+      "route": "1",
+      "route_name": "Bronzeville/Union Station",
+      "rides": 27196
+    },
+    {
+      "route": "136",
+      "route_name": "Sheridan/LaSalle Express",
+      "rides": 27114
+    },
+    {
+      "route": "11",
+      "route_name": "Lincoln",
+      "rides": 25865
+    },
+    {
+      "route": "106",
+      "route_name": "East 103rd",
+      "rides": 25540
+    },
+    {
+      "route": "121",
+      "route_name": "Union/Streeterville Express",
+      "rides": 24978
+    },
+    {
+      "route": "68",
+      "route_name": "Northwest Highway",
+      "rides": 24717
+    },
+    {
+      "route": "88",
+      "route_name": "Higgins",
+      "rides": 24709
+    },
+    {
+      "route": "143",
+      "route_name": "Stockton/Michigan Express",
+      "rides": 23253
+    },
+    {
+      "route": "171",
+      "route_name": "U. of Chicago/Hyde Park",
+      "rides": 22141
+    },
+    {
+      "route": "43",
+      "route_name": "43rd",
+      "rides": 21292
+    },
+    {
+      "route": "120",
+      "route_name": "Ogilvie/Streeterville Express",
+      "rides": 20207
+    },
+    {
+      "route": "48",
+      "route_name": "South Damen",
+      "rides": 18519
+    },
+    {
+      "route": "62H",
+      "route_name": "Archer/Harlem",
+      "rides": 18043
+    },
+    {
+      "route": "108",
+      "route_name": "Halsted/95th",
+      "rides": 16704
+    },
+    {
+      "route": "96",
+      "route_name": "Lunt",
+      "rides": 15568
+    },
+    {
+      "route": "85A",
+      "route_name": "North Central",
+      "rides": 15522
+    },
+    {
+      "route": "31",
+      "route_name": "31st",
+      "rides": 14099
+    },
+    {
+      "route": "125",
+      "route_name": "Water Tower Express",
+      "rides": 11604
+    },
+    {
+      "route": "54A",
+      "route_name": "North Cicero/Skokie Blvd.",
+      "rides": 11434
+    },
+    {
+      "route": "192",
+      "route_name": "U. of Chicago Hospitals Express",
+      "rides": 10491
+    },
+    {
+      "route": "55N",
+      "route_name": "55th/Narragansett",
+      "rides": 9873
+    },
+    {
+      "route": "1001",
+      "route_name": "Shuttle/Special Event Route",
+      "rides": 9093
+    },
+    {
+      "route": "100",
+      "route_name": "Jeffery Manor Express",
+      "rides": 8730
+    },
+    {
+      "route": "111A",
+      "route_name": "Pullman Shuttle",
+      "rides": 8707
+    },
+    {
+      "route": "206",
+      "route_name": "Evanston Circulator",
+      "rides": 8705
+    },
+    {
+      "route": "N5",
+      "route_name": "South Shore Night Bus",
+      "rides": 8587
+    },
+    {
+      "route": "19",
+      "route_name": "United Center Express",
+      "rides": 3629
+    },
+    {
+      "route": "165",
+      "route_name": "West 65th",
+      "rides": 3370
+    },
+    {
+      "route": "55A",
+      "route_name": "55th/Austin",
+      "rides": 2976
+    },
+    {
+      "route": "169",
+      "route_name": "69th-UPS Express",
+      "rides": 2392
+    }
+  ],
+  "byStop": [
+    {
+      "station_id": "40380",
+      "station_name": "Clark/Lake",
+      "rides": 324243
+    },
+    {
+      "station_id": "41660",
+      "station_name": "Lake/State",
+      "rides": 282039
+    },
+    {
+      "station_id": "41700",
+      "station_name": "Washington/Wabash",
+      "rides": 269995
+    },
+    {
+      "station_id": "40890",
+      "station_name": "O'Hare Airport",
+      "rides": 267691
+    },
+    {
+      "station_id": "41220",
+      "station_name": "Fullerton",
+      "rides": 259369
+    },
+    {
+      "station_id": "40370",
+      "station_name": "Washington/Dearborn",
+      "rides": 221680
+    },
+    {
+      "station_id": "41450",
+      "station_name": "Chicago/State",
+      "rides": 221265
+    },
+    {
+      "station_id": "41320",
+      "station_name": "Belmont-North Main",
+      "rides": 216766
+    },
+    {
+      "station_id": "41400",
+      "station_name": "Roosevelt",
+      "rides": 196315
+    },
+    {
+      "station_id": "40330",
+      "station_name": "Grand/State",
+      "rides": 193525
+    },
+    {
+      "station_id": "41420",
+      "station_name": "Addison-North Main",
+      "rides": 186634
+    },
+    {
+      "station_id": "40450",
+      "station_name": "95th/Dan Ryan",
+      "rides": 163146
+    },
+    {
+      "station_id": "40630",
+      "station_name": "Clark/Division",
+      "rides": 144598
+    },
+    {
+      "station_id": "41000",
+      "station_name": "Cermak-Chinatown",
+      "rides": 142552
+    },
+    {
+      "station_id": "40680",
+      "station_name": "Adams/Wabash",
+      "rides": 133913
+    },
+    {
+      "station_id": "41020",
+      "station_name": "Logan Square",
+      "rides": 133154
+    },
+    {
+      "station_id": "40730",
+      "station_name": "Washington/Wells",
+      "rides": 131768
+    },
+    {
+      "station_id": "40930",
+      "station_name": "Midway Airport",
+      "rides": 131356
+    },
+    {
+      "station_id": "40540",
+      "station_name": "Wilson",
+      "rides": 130717
+    },
+    {
+      "station_id": "40560",
+      "station_name": "Jackson/State",
+      "rides": 130078
+    },
+    {
+      "station_id": "40040",
+      "station_name": "Quincy/Wells",
+      "rides": 128465
+    },
+    {
+      "station_id": "40460",
+      "station_name": "Merchandise Mart",
+      "rides": 128059
+    },
+    {
+      "station_id": "41280",
+      "station_name": "Jefferson Park",
+      "rides": 122595
+    },
+    {
+      "station_id": "40590",
+      "station_name": "Damen/Milwaukee",
+      "rides": 121696
+    },
+    {
+      "station_id": "40070",
+      "station_name": "Jackson/Dearborn",
+      "rides": 117702
+    },
+    {
+      "station_id": "40350",
+      "station_name": "UIC-Halsted",
+      "rides": 116728
+    },
+    {
+      "station_id": "40710",
+      "station_name": "Chicago/Franklin",
+      "rides": 113275
+    },
+    {
+      "station_id": "40320",
+      "station_name": "Division/Milwaukee",
+      "rides": 112137
+    },
+    {
+      "station_id": "41090",
+      "station_name": "Monroe/State",
+      "rides": 112056
+    },
+    {
+      "station_id": "40190",
+      "station_name": "Sox-35th-Dan Ryan",
+      "rides": 108423
+    },
+    {
+      "station_id": "41510",
+      "station_name": "Morgan-Lake",
+      "rides": 105433
+    },
+    {
+      "station_id": "40820",
+      "station_name": "Rosemont",
+      "rides": 102693
+    },
+    {
+      "station_id": "40240",
+      "station_name": "79th",
+      "rides": 99695
+    },
+    {
+      "station_id": "41300",
+      "station_name": "Loyola",
+      "rides": 97861
+    },
+    {
+      "station_id": "40650",
+      "station_name": "North/Clybourn",
+      "rides": 97060
+    },
+    {
+      "station_id": "40060",
+      "station_name": "Belmont-O'Hare",
+      "rides": 96549
+    },
+    {
+      "station_id": "40790",
+      "station_name": "Monroe/Dearborn",
+      "rides": 95640
+    },
+    {
+      "station_id": "40530",
+      "station_name": "Diversey",
+      "rides": 95385
+    },
+    {
+      "station_id": "40670",
+      "station_name": "Western/Milwaukee",
+      "rides": 94806
+    },
+    {
+      "station_id": "40570",
+      "station_name": "California/Milwaukee",
+      "rides": 94295
+    },
+    {
+      "station_id": "40900",
+      "station_name": "Howard",
+      "rides": 93048
+    },
+    {
+      "station_id": "40660",
+      "station_name": "Armitage",
+      "rides": 88638
+    },
+    {
+      "station_id": "40960",
+      "station_name": "Pulaski-Orange",
+      "rides": 83929
+    },
+    {
+      "station_id": "40990",
+      "station_name": "69th",
+      "rides": 78895
+    },
+    {
+      "station_id": "40080",
+      "station_name": "Sheridan",
+      "rides": 77195
+    },
+    {
+      "station_id": "40100",
+      "station_name": "Morse",
+      "rides": 77112
+    },
+    {
+      "station_id": "41380",
+      "station_name": "Bryn Mawr",
+      "rides": 75162
+    },
+    {
+      "station_id": "40550",
+      "station_name": "Irving Park-O'Hare",
+      "rides": 74200
+    },
+    {
+      "station_id": "40490",
+      "station_name": "Grand/Milwaukee",
+      "rides": 73540
+    },
+    {
+      "station_id": "41160",
+      "station_name": "Clinton-Lake",
+      "rides": 72892
+    },
+    {
+      "station_id": "40850",
+      "station_name": "Library",
+      "rides": 72380
+    },
+    {
+      "station_id": "40760",
+      "station_name": "Granville",
+      "rides": 71872
+    },
+    {
+      "station_id": "40800",
+      "station_name": "Sedgwick",
+      "rides": 71494
+    },
+    {
+      "station_id": "40310",
+      "station_name": "Western-Orange",
+      "rides": 67480
+    },
+    {
+      "station_id": "41290",
+      "station_name": "Kimball",
+      "rides": 67329
+    },
+    {
+      "station_id": "41490",
+      "station_name": "Harrison",
+      "rides": 65477
+    },
+    {
+      "station_id": "40360",
+      "station_name": "Southport",
+      "rides": 65089
+    },
+    {
+      "station_id": "41170",
+      "station_name": "Garfield-Dan Ryan",
+      "rides": 64095
+    },
+    {
+      "station_id": "41150",
+      "station_name": "Kedzie-Midway",
+      "rides": 61273
+    },
+    {
+      "station_id": "40230",
+      "station_name": "Cumberland",
+      "rides": 60707
+    },
+    {
+      "station_id": "40770",
+      "station_name": "Lawrence",
+      "rides": 59433
+    },
+    {
+      "station_id": "40020",
+      "station_name": "Harlem-Lake",
+      "rides": 58312
+    },
+    {
+      "station_id": "41200",
+      "station_name": "Argyle",
+      "rides": 58239
+    },
+    {
+      "station_id": "41030",
+      "station_name": "Polk",
+      "rides": 58035
+    },
+    {
+      "station_id": "40050",
+      "station_name": "Davis",
+      "rides": 57110
+    },
+    {
+      "station_id": "40430",
+      "station_name": "Clinton-Forest Park",
+      "rides": 56555
+    },
+    {
+      "station_id": "41430",
+      "station_name": "87th",
+      "rides": 56349
+    },
+    {
+      "station_id": "41230",
+      "station_name": "47th-Dan Ryan",
+      "rides": 54954
+    },
+    {
+      "station_id": "41410",
+      "station_name": "Chicago/Milwaukee",
+      "rides": 54658
+    },
+    {
+      "station_id": "41210",
+      "station_name": "Wellington",
+      "rides": 53954
+    },
+    {
+      "station_id": "40340",
+      "station_name": "Berwyn",
+      "rides": 52739
+    },
+    {
+      "station_id": "40910",
+      "station_name": "63rd-Dan Ryan",
+      "rides": 51401
+    },
+    {
+      "station_id": "40090",
+      "station_name": "Damen-Brown",
+      "rides": 50495
+    },
+    {
+      "station_id": "41240",
+      "station_name": "Addison-O'Hare",
+      "rides": 50263
+    },
+    {
+      "station_id": "41340",
+      "station_name": "LaSalle",
+      "rides": 49442
+    },
+    {
+      "station_id": "40170",
+      "station_name": "Ashland-Lake",
+      "rides": 48698
+    },
+    {
+      "station_id": "40160",
+      "station_name": "LaSalle/Van Buren",
+      "rides": 48642
+    },
+    {
+      "station_id": "41460",
+      "station_name": "Irving Park-Brown",
+      "rides": 48642
+    },
+    {
+      "station_id": "40880",
+      "station_name": "Thorndale",
+      "rides": 48137
+    },
+    {
+      "station_id": "40120",
+      "station_name": "35th/Archer",
+      "rides": 47851
+    },
+    {
+      "station_id": "41130",
+      "station_name": "Halsted-Orange",
+      "rides": 47676
+    },
+    {
+      "station_id": "41310",
+      "station_name": "Paulina",
+      "rides": 47662
+    },
+    {
+      "station_id": "41500",
+      "station_name": "Montrose-Brown",
+      "rides": 44070
+    },
+    {
+      "station_id": "40580",
+      "station_name": "54th/Cermak",
+      "rides": 44009
+    },
+    {
+      "station_id": "41330",
+      "station_name": "Montrose-O'Hare",
+      "rides": 43506
+    },
+    {
+      "station_id": "41690",
+      "station_name": "Cermak-McCormick Place",
+      "rides": 42623
+    },
+    {
+      "station_id": "40750",
+      "station_name": "Harlem-O'Hare",
+      "rides": 42412
+    },
+    {
+      "station_id": "40810",
+      "station_name": "Medical Center",
+      "rides": 38977
+    },
+    {
+      "station_id": "41180",
+      "station_name": "Kedzie-Brown",
+      "rides": 38375
+    },
+    {
+      "station_id": "40830",
+      "station_name": "18th",
+      "rides": 38324
+    },
+    {
+      "station_id": "41480",
+      "station_name": "Western-Brown",
+      "rides": 37502
+    },
+    {
+      "station_id": "41440",
+      "station_name": "Addison-Brown",
+      "rides": 35728
+    },
+    {
+      "station_id": "41120",
+      "station_name": "35-Bronzeville-IIT",
+      "rides": 34217
+    },
+    {
+      "station_id": "41010",
+      "station_name": "Rockwell",
+      "rides": 33954
+    },
+    {
+      "station_id": "40210",
+      "station_name": "Damen-Cermak",
+      "rides": 32971
+    },
+    {
+      "station_id": "40280",
+      "station_name": "Central-Lake",
+      "rides": 32326
+    },
+    {
+      "station_id": "41060",
+      "station_name": "Ashland-Orange",
+      "rides": 31627
+    },
+    {
+      "station_id": "40390",
+      "station_name": "Forest Park",
+      "rides": 29838
+    },
+    {
+      "station_id": "41190",
+      "station_name": "Jarvis",
+      "rides": 29593
+    },
+    {
+      "station_id": "41710",
+      "station_name": "Damen-Lake",
+      "rides": 28002
+    },
+    {
+      "station_id": "40440",
+      "station_name": "California-Cermak",
+      "rides": 26920
+    },
+    {
+      "station_id": "40870",
+      "station_name": "Francisco",
+      "rides": 25419
+    },
+    {
+      "station_id": "40140",
+      "station_name": "Dempster-Skokie",
+      "rides": 23858
+    },
+    {
+      "station_id": "41260",
+      "station_name": "Austin-Lake",
+      "rides": 23286
+    },
+    {
+      "station_id": "40740",
+      "station_name": "Western-Cermak",
+      "rides": 23125
+    },
+    {
+      "station_id": "40510",
+      "station_name": "Garfield-South Elevated",
+      "rides": 23107
+    },
+    {
+      "station_id": "40250",
+      "station_name": "Kedzie-Homan-Forest Park",
+      "rides": 22509
+    },
+    {
+      "station_id": "40030",
+      "station_name": "Pulaski-Lake",
+      "rides": 22247
+    },
+    {
+      "station_id": "41040",
+      "station_name": "Kedzie-Cermak",
+      "rides": 20508
+    },
+    {
+      "station_id": "40470",
+      "station_name": "Racine",
+      "rides": 20497
+    },
+    {
+      "station_id": "40420",
+      "station_name": "Cicero-Cermak",
+      "rides": 20377
+    },
+    {
+      "station_id": "40780",
+      "station_name": "Central Park",
+      "rides": 20365
+    },
+    {
+      "station_id": "40610",
+      "station_name": "Ridgeland",
+      "rides": 20150
+    },
+    {
+      "station_id": "40720",
+      "station_name": "East 63rd-Cottage Grove",
+      "rides": 20089
+    },
+    {
+      "station_id": "41350",
+      "station_name": "Oak Park-Lake",
+      "rides": 20031
+    },
+    {
+      "station_id": "40290",
+      "station_name": "Ashland/63rd",
+      "rides": 19948
+    },
+    {
+      "station_id": "41360",
+      "station_name": "California-Lake",
+      "rides": 19668
+    },
+    {
+      "station_id": "41080",
+      "station_name": "47th-South Elevated",
+      "rides": 19653
+    },
+    {
+      "station_id": "41070",
+      "station_name": "Kedzie-Lake",
+      "rides": 19349
+    },
+    {
+      "station_id": "40480",
+      "station_name": "Cicero-Lake",
+      "rides": 19261
+    },
+    {
+      "station_id": "40150",
+      "station_name": "Pulaski-Cermak",
+      "rides": 18649
+    },
+    {
+      "station_id": "40270",
+      "station_name": "Main",
+      "rides": 18512
+    },
+    {
+      "station_id": "40010",
+      "station_name": "Austin-Forest Park",
+      "rides": 18175
+    },
+    {
+      "station_id": "41270",
+      "station_name": "43rd",
+      "rides": 17586
+    },
+    {
+      "station_id": "40400",
+      "station_name": "Noyes",
+      "rides": 17021
+    },
+    {
+      "station_id": "40130",
+      "station_name": "51st",
+      "rides": 16908
+    },
+    {
+      "station_id": "40920",
+      "station_name": "Pulaski-Forest Park",
+      "rides": 16761
+    },
+    {
+      "station_id": "40700",
+      "station_name": "Laramie",
+      "rides": 16260
+    },
+    {
+      "station_id": "40220",
+      "station_name": "Western-Forest Park",
+      "rides": 16041
+    },
+    {
+      "station_id": "41670",
+      "station_name": "Conservatory",
+      "rides": 15872
+    },
+    {
+      "station_id": "40180",
+      "station_name": "Oak Park-Forest Park",
+      "rides": 15790
+    },
+    {
+      "station_id": "41050",
+      "station_name": "Linden",
+      "rides": 15015
+    },
+    {
+      "station_id": "40970",
+      "station_name": "Cicero-Forest Park",
+      "rides": 14796
+    },
+    {
+      "station_id": "40520",
+      "station_name": "Foster",
+      "rides": 14263
+    },
+    {
+      "station_id": "40690",
+      "station_name": "Dempster",
+      "rides": 14247
+    },
+    {
+      "station_id": "41250",
+      "station_name": "Central-Evanston",
+      "rides": 13151
+    },
+    {
+      "station_id": "41680",
+      "station_name": "Oakton-Skokie",
+      "rides": 12599
+    },
+    {
+      "station_id": "40300",
+      "station_name": "Indiana",
+      "rides": 12575
+    },
+    {
+      "station_id": "40840",
+      "station_name": "South Boulevard",
+      "rides": 11431
+    },
+    {
+      "station_id": "40940",
+      "station_name": "Halsted/63rd",
+      "rides": 10535
+    },
+    {
+      "station_id": "40980",
+      "station_name": "Harlem-Forest Park",
+      "rides": 9856
+    },
+    {
+      "station_id": "41140",
+      "station_name": "King Drive",
+      "rides": 9009
+    },
+    {
+      "station_id": "40600",
+      "station_name": "Kostner",
+      "rides": 7443
+    }
+  ]
+}
