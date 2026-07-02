@@ -22,6 +22,7 @@ import bronze
 import census
 import checks
 import cli
+import delays
 import funding
 import gtfs
 import hiring
@@ -480,6 +481,61 @@ def main() -> int:
         raise AssertionError("append_sample accepted a non-LiveFeed payload")
     except ValueError:
         passed.append("live.append_sample rejects a payload missing LiveFeed keys")
+
+    # delays.py — E11 delay + crowding-proxy aggregation over the live-feed samples.
+    # Pure functions, fixtures only (the NDJSON log is a gitignored live time series).
+    # An empty log yields an honest zero-sample payload the page renders as DataState.
+    empty = delays.aggregate([])
+    assert empty["meta"]["samples"] == 0 and empty["delay"]["byMode"] == []
+    assert empty["bunching"]["observations"] == 0 and empty["delay"]["delayedShare"] == 0.0
+    assert [b["bucket"] for b in empty["countdown"]] == list(delays.COUNTDOWN_BUCKETS)
+    passed.append("delays.aggregate: empty log → honest zero-sample payload (DataState)")
+
+    # Delayed share is per-observation, per-mode: a vehicle seen in N snapshots counts
+    # N times (it's a share over time). 2 of 3 bus obs delayed → 0.6667; rail 0/1.
+    two_feeds = [
+        {"generated": "2026-07-02T18:00:00Z",
+         "vehicles": [{"mode": "bus", "delayed": True}, {"mode": "rail", "delayed": False}],
+         "arrivals": []},
+        {"generated": "2026-07-02T18:00:30Z",
+         "vehicles": [{"mode": "bus", "delayed": True}, {"mode": "bus", "delayed": False}],
+         "arrivals": []},
+    ]
+    dl = delays.delayed_breakdown(two_feeds)
+    bus = next(m for m in dl["byMode"] if m["mode"] == "bus")
+    assert bus["observations"] == 3 and bus["delayed"] == 2 and bus["delayedShare"] == 0.6667, dl
+    assert dl["observations"] == 4 and dl["delayed"] == 2, dl
+    passed.append("delays.delayed_breakdown: per-observation delayed share, split by mode")
+
+    # Countdown histogram buckets by wait: 0→DUE, 3→1–5, 20→16+; None is skipped.
+    hist = delays.countdown_histogram([{"arrivals": [
+        {"countdown_min": 0}, {"countdown_min": 3}, {"countdown_min": 3},
+        {"countdown_min": 20}, {"countdown_min": None}]}])
+    hb = {h["bucket"]: h["count"] for h in hist}
+    assert hb == {"DUE": 1, "1–5": 2, "6–10": 0, "11–15": 0, "16+": 1}, hist
+    passed.append("delays.countdown_histogram: next-arrival waits bucketed, null skipped")
+
+    # Bunching: a (route, stop, dir) group needs ≥2 DISTINCT vehicles to be an
+    # observation; bunched when the two soonest are within gap_min. Route 9 has two
+    # buses 1 min apart (bunched); route 4 has one vehicle (not an observation).
+    bfeed = {"arrivals": [
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "a", "countdown_min": 2},
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "b", "countdown_min": 3},
+        {"route_id": "4", "stop_id": "2", "direction": "S", "vehicle_id": "c", "countdown_min": 5},
+    ]}
+    bn = delays.bunching([bfeed])
+    assert bn["observations"] == 1 and bn["bunched"] == 1 and bn["bunchRate"] == 1.0, bn
+    assert bn["topRoutes"][0]["route"] == "9", bn
+    passed.append("delays.bunching: ≥2-vehicle groups only, bunched within gap_min")
+
+    # Not bunched: two vehicles 8 min apart at one stop = healthy headway, and a
+    # single vehicle repeated across snapshots dedupes to one (no false observation).
+    wide = delays.bunching([{"arrivals": [
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "a", "countdown_min": 2},
+        {"route_id": "9", "stop_id": "1", "direction": "N", "vehicle_id": "b", "countdown_min": 10},
+    ]}])
+    assert wide["observations"] == 1 and wide["bunched"] == 0 and wide["bunchRate"] == 0.0, wide
+    passed.append("delays.bunching: healthy headway (>gap_min) is not counted as bunched")
 
     # verify_metro — the data-integrity gate the loop reuses (v2.0.6). Exercise it
     # no-network against fixture gold warehouses + bronze manifests: a complete
