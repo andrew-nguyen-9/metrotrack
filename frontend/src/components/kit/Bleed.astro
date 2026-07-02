@@ -1,0 +1,12 @@
+---
+// Bleed — breaks a child out of the content column to full viewport width
+// (reserved for the map, DIRECTION §3). Place inside the normal content column.
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+// Full-bleed without horizontal scroll: pull to the viewport edges symmetrically.
+const style = "width:100vw;max-width:100vw;margin-inline:calc(50% - 50vw)";
+---
+
+<div class={className} style={style}><slot /></div>

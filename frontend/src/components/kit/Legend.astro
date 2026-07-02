@@ -1,0 +1,40 @@
+---
+// Legend — maps a color to a label for charts/maps. Color is never the sole
+// signal: every item also carries a shape (dot/line/square) and its text label
+// (DIRECTION §2). Pass `items`; swatches are aria-hidden, labels carry meaning.
+interface LegendItem {
+  label: string;
+  color?: string;                        // any CSS color / var(--…)
+  shape?: "dot" | "line" | "square";
+  dash?: boolean;                        // dashed line variant (line shape)
+}
+interface Props {
+  items: LegendItem[];
+  label?: string;                        // accessible name for the list
+  direction?: "row" | "col";
+  class?: string;
+}
+const { items, label = "Legend", direction = "row", class: className } = Astro.props;
+const listCls = direction === "row" ? "flex flex-wrap gap-x-4 gap-y-1" : "flex flex-col gap-1";
+---
+
+<ul class:list={[listCls, "text-sm text-text-muted", className]} aria-label={label}>
+  {items.map((it) => (
+    <li class="flex items-center gap-2">
+      <span aria-hidden="true" class="inline-flex h-3 w-3 shrink-0 items-center justify-center">
+        {it.shape === "line" ? (
+          <span
+            class="h-0.5 w-3.5"
+            style={`background:${it.color ?? "currentColor"};${it.dash ? "background:repeating-linear-gradient(90deg," + (it.color ?? "currentColor") + " 0 3px,transparent 3px 6px);" : ""}`}
+          />
+        ) : (
+          <span
+            class:list={["inline-block h-3 w-3 border border-hairline/50", it.shape === "square" ? "rounded-sm" : "rounded-full"]}
+            style={`background:${it.color ?? "currentColor"}`}
+          />
+        )}
+      </span>
+      <span>{it.label}</span>
+    </li>
+  ))}
+</ul>

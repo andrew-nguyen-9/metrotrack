@@ -1,35 +1,115 @@
 @import "tailwindcss";
 
-/* ── MetroTrack design tokens ──────────────────────────────────────────────
-   "Transit Instrument Panel" (docs/design-system/DESIGN_GUIDELINE.md).
-   Dark-native default + light. All color in OKLCH so themes stay perceptually
-   matched. This file is the foundation token spine; values are refined and the
-   agency-color group is filled in v1.1 (see docs/design-system/TOKENS.md).
-   Components reference tokens — never hardcode hex. */
+/* ── MetroTrack design tokens — "Field Instrument" (v3) ──────────────────────
+   The token spine every v3 page + island builds on. Implements
+   docs/design-system/v3-DESIGN_DIRECTION.md. Dark-native default + light peer.
+   All *theme* color in OKLCH so light/dark stay perceptually matched. Agency
+   brand colors are the one exception — they are fixed brand values (constant
+   across themes), stored as their exact sourced hex so we never drift a brand.
+   Components reference tokens — never hardcode hex. See docs/design-system/TOKENS.md. */
 
 @theme {
-  /* expose tokens as Tailwind utilities (bg-bg, text-text, border-hairline…) */
+  /* Expose tokens as Tailwind utilities (bg-bg, text-text, text-delta-pos, …). */
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-hairline: var(--border-hairline);
   --color-text: var(--text);
   --color-text-muted: var(--text-muted);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-delta-pos: var(--delta-pos);
+  --color-delta-neg: var(--delta-neg);
+  --color-warning: var(--warning);
+  --color-agency-cta: var(--agency-cta);
+  --color-agency-metra: var(--agency-metra);
+  --color-agency-pace: var(--agency-pace);
+  --color-agency-nita: var(--agency-nita);
   --font-mono: var(--font-mono);
 }
 
 :root {
-  /* Dark default — near-black layered charcoals, one charged accent. */
+  /* ── Type scale — modular ~1.25 anchored at 16px (DIRECTION §1). ────────── */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.5rem;
+  /* Display steps clamp fluidly for 320→1920; max = the modular-scale rem. */
+  --text-xl: clamp(1.5rem, 1.05rem + 2vw, 2rem);
+  --text-2xl: clamp(1.9rem, 1.2rem + 3.2vw, 2.75rem);
+  --text-3xl: clamp(2.35rem, 1.35rem + 4.6vw, 3.75rem);
+
+  --leading-tight: 1.08; /* display */
+  --leading-snug: 1.25;
+  --leading-normal: 1.5; /* body */
+  --measure: 68ch;       /* prose max line length (60–72ch) */
+
+  /* Text-size a11y toggle multiplies the root font-size (scales every rem). */
+  --text-scale: 1;
+
+  /* ── Spacing — 8px grid (DIRECTION §3). t-shirt names = primitive gap props. */
+  --space-0: 0;
+  --space-3xs: 0.25rem; /* 4  */
+  --space-2xs: 0.5rem;  /* 8  */
+  --space-xs: 0.75rem;  /* 12 */
+  --space-sm: 1rem;     /* 16 */
+  --space-md: 1.5rem;   /* 24 */
+  --space-lg: 2rem;     /* 32 */
+  --space-xl: 3rem;     /* 48 */
+  --space-2xl: 4rem;    /* 64 */
+  --space-3xl: 6rem;    /* 96 */
+  --measure-content: 72rem; /* page content column max */
+
+  /* ── Motion (DIRECTION §4). 120–200ms ease-out; reveals ≤300ms. ─────────── */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur: 160ms;
+  --dur-slow: 200ms;
+  --dur-reveal: 300ms;
+
+  /* ── Color — dark default: near-black charcoals, one charged accent. ────── */
   --bg: oklch(0.16 0.012 250);
   --surface: oklch(0.21 0.014 250);
+  --surface-2: oklch(0.25 0.015 250); /* raised panels, popovers */
   --border-hairline: oklch(0.32 0.014 250 / 0.6);
   --text: oklch(0.95 0.01 250);
   --text-muted: oklch(0.72 0.015 250);
-  --accent: oklch(0.74 0.16 195); /* charged cyan — rationed to value/action/trend */
+  --accent: oklch(0.74 0.16 195);   /* charged cyan — rationed to value/action/trend */
+  --accent-ink: oklch(0.16 0.02 250); /* text on an accent fill */
 
-  /* Agency colors are a DATA ENCODING, not decoration. Exact OKLCH values come
-     from each agency's brand guide in v1.1 (TOKENS.md) — do not guess hex.
-     --agency-cta / --agency-pace / --agency-metra / --agency-nita: TODO v1.1 */
+  /* Deltas + warning (value up/down; stale/blocked-data). Pass AA on surface. */
+  --delta-pos: oklch(0.75 0.15 152);
+  --delta-neg: oklch(0.68 0.18 25);
+  --warning: oklch(0.80 0.13 75);
+
+  /* Categorical series ramp for multi-series charts — distinguishable + carries
+     a paired symbol/dash so color is never the sole signal (DIRECTION §2). The
+     colorblind toggle swaps this to Okabe-Ito below. */
+  --cat-1: oklch(0.74 0.13 205);
+  --cat-2: oklch(0.79 0.14 70);
+  --cat-3: oklch(0.70 0.15 300);
+  --cat-4: oklch(0.74 0.15 150);
+  --cat-5: oklch(0.70 0.16 15);
+  --cat-6: oklch(0.66 0.15 262);
+
+  /* Agency brand colors = a DATA ENCODING, not decoration (DIRECTION §2).
+     Exact sourced hex, constant across themes; each pairs with a label/shape
+     wherever it appears. All three operators brand blue, so multi-agency charts
+     use --cat-* (distinguishable) + symbols; --agency-* is for single-agency
+     attribution (badges, SourceTag, single-series accents).
+       CTA   — transitchicago.com/developers/branding (PMS 2728C, RGB 23 67 168)
+       Metra — metrarail.com official site brand navy
+       Pace  — pacebus.com official theme stylesheet brand blue */
+  --agency-cta: #1743a6;
+  --agency-metra: #0a3d6a;
+  --agency-pace: #011489;
+  /* NITA (Northern Illinois Transit Authority) — proposed 2025 NE-Illinois
+     transit-reform agency; NOT operational and has no published brand guide.
+     Provisional distinct slate-teal so it reads apart from the three operator
+     blues; replace with the official value once a brand guide exists. */
+  --agency-nita: #2f7d8a;
 
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", monospace;
 
@@ -37,14 +117,46 @@
 }
 
 :root[data-theme="light"] {
-  /* Light — warm-neutral paper. Toggle island lands with the design system (v1.1). */
+  /* Light — warm-neutral paper. A peer, not an afterthought. */
   --bg: oklch(0.97 0.008 95);
   --surface: oklch(0.99 0.006 95);
+  --surface-2: oklch(1 0 0);
   --border-hairline: oklch(0.55 0.01 95 / 0.35);
   --text: oklch(0.22 0.015 250);
   --text-muted: oklch(0.45 0.015 250);
-  --accent: oklch(0.58 0.15 195);
+  --accent: oklch(0.55 0.15 200);
+  --accent-ink: oklch(0.99 0.006 95);
+
+  --delta-pos: oklch(0.52 0.14 152);
+  --delta-neg: oklch(0.53 0.19 25);
+  --warning: oklch(0.60 0.13 70);
+
+  --cat-1: oklch(0.55 0.13 205);
+  --cat-2: oklch(0.62 0.15 60);
+  --cat-3: oklch(0.52 0.16 300);
+  --cat-4: oklch(0.52 0.15 150);
+  --cat-5: oklch(0.55 0.18 20);
+  --cat-6: oklch(0.50 0.16 262);
+
   color-scheme: light;
+}
+
+/* ── Text-size a11y toggle — scales every rem via the root font-size. ─────── */
+:root[data-text-size="s"] { --text-scale: 0.9; }
+:root[data-text-size="l"] { --text-scale: 1.15; }
+
+/* ── Colorblind a11y toggle — swap categorical + delta ramps to an Okabe-Ito
+   palette (max separability for deuter/protan/tritan). Base ramp already passes
+   via non-color redundancy; this maximises it. Works in both themes. */
+:root[data-colorblind="on"] {
+  --cat-1: #0072b2; /* blue      */
+  --cat-2: #e69f00; /* orange    */
+  --cat-3: #009e73; /* green     */
+  --cat-4: #cc79a7; /* purple    */
+  --cat-5: #56b4e9; /* sky       */
+  --cat-6: #d55e00; /* vermilion */
+  --delta-pos: #009e73;
+  --delta-neg: #d55e00; /* avoid the red/green delta confusion */
 }
 
 @layer base {
@@ -52,26 +164,57 @@
     background: var(--bg);
     color: var(--text);
     font-family: system-ui, sans-serif;
+    /* Text-size toggle: one line scales every rem-based size (tokens + utils). */
+    font-size: calc(100% * var(--text-scale));
+    line-height: var(--leading-normal);
     -webkit-text-size-adjust: 100%;
   }
+
   /* Stats always align: tabular numerals everywhere numbers live. */
   .tabular {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
   }
+
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
   }
-  /* Motion is restrained and always reduced-motion-aware (DESIGN_GUIDELINE M5). */
+
+  /* Skip link (shell) — visible only when focused. */
+  .skip-link {
+    position: absolute;
+    left: var(--space-2xs);
+    top: var(--space-2xs);
+    z-index: 50;
+    transform: translateY(-150%);
+    transition: transform var(--dur) var(--ease);
+    background: var(--surface-2);
+    color: var(--text);
+    padding: var(--space-2xs) var(--space-sm);
+    border: 1px solid var(--border-hairline);
+    border-radius: 0.375rem;
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  /* Motion is restrained + reduced-motion-aware. The OS media query AND the
+     reduce-motion toggle (data-motion="reduce") both force the static path. */
   @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
+    *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+  }
+  :root[data-motion="reduce"] *,
+  :root[data-motion="reduce"] *::before,
+  :root[data-motion="reduce"] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

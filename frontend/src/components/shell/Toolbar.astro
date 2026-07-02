@@ -1,0 +1,9 @@
+---
+// Toolbar — hosts the a11y/theme toggle island (DIRECTION §5). One island only.
+// client:load so persisted preferences are editable immediately on every page.
+import Toggles from "@/components/shell/Toggles.tsx";
+---
+
+<div class="flex items-center">
+  <Toggles client:load />
+</div>
