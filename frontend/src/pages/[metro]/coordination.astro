@@ -1,0 +1,169 @@
+---
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, coordinationData } from "@/lib/metros";
+import { authorityLabel } from "@/lib/transit";
+import type { CoordinationData } from "@/lib/coordination";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = coordinationData(metro.slug) as CoordinationData;
+
+const nf = (n: number) => n.toLocaleString();
+const MODE: Record<string, string> = {
+  bus: "bus", rail: "rail", "commuter-rail": "commuter rail", multi: "bus/rail", other: "service",
+};
+const modeLabel = (m: string) => MODE[m] ?? m;
+const hasPairs = data.pairs.length > 0;
+// Headline "worst case": the longest typical transfer wait across the shown pairs.
+const worstWait = hasPairs ? Math.max(...data.pairs.map((p) => p.wait_min)) : 0;
+---
+
+<Base metro={metro} title={`Service coordination — MetroTrack ${metro.name}`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Where two agencies almost meet
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        A spatial scan for stops run by <em>different</em> agencies that sit within a short
+        walk of each other ({data.radiusM}&nbsp;m). Each such pair is a place where a rider
+        could transfer — so the schedules ought to line up. We rank them by how close the
+        stops are and how far apart the two services' frequencies run, surfacing the pairs
+        where a merge or a timetable alignment would help riders most.
+      </p>
+    </Stack>
+
+    <StatBand aria-label="Coordination headline figures">
+      <Card>
+        <Stat value={nf(data.candidateCount)} label="Cross-agency stop pairs"
+          hint={`within ${data.radiusM} m of each other`} />
+      </Card>
+      <Card>
+        <Stat value={`${data.radiusM} m`} label="Walkable transfer radius"
+          hint="great-circle (ST_Distance_Sphere)" size="md" />
+      </Card>
+      <Card>
+        <Stat value={hasPairs ? `~${worstWait} min` : "—"} label="Worst typical transfer wait"
+          hint="½ the slower service's headway" size="md" />
+      </Card>
+    </StatBand>
+
+    <Callout title="How the ranking works">
+      For every stop we measure the great-circle distance to each nearby stop run by another
+      agency (<strong>PostGIS/geography</strong> — <span class="tabular">ST_DWithin</span> /
+      <span class="tabular">ST_Distance_Sphere</span>). The distance is exact. The
+      <strong>timing gap</strong> uses each agency's <em>representative published</em> headway
+      (not a live timetable): the expected wait for an uncoordinated transfer is about half the
+      slower service's headway. The <strong>score</strong> blends closeness and frequency
+      mismatch — equal weight, each on a 0–1 scale — so a very close pair of very differently
+      timed services ranks highest.
+    </Callout>
+
+    <Stack gap="md" as="section" aria-labelledby="pairs-heading">
+      <h2 id="pairs-heading" class="text-[length:var(--text-lg)] font-medium">
+        Ranked coordination candidates
+      </h2>
+
+      {hasPairs ? (
+        <>
+          <Card class="!p-0 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <caption class="sr-only">
+                  Top {data.shown} of {nf(data.candidateCount)} cross-agency stop pairs within
+                  {data.radiusM} m, ranked by a closeness + frequency-mismatch score
+                </caption>
+                <thead>
+                  <tr class="border-b border-hairline text-text-muted">
+                    <th scope="col" class="px-4 py-2 font-medium">#</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Stop A</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Stop B</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Apart</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Transfer wait</th>
+                    <th scope="col" class="px-4 py-2 font-medium">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.pairs.map((p, i) => (
+                    <tr class="border-b border-hairline/40 align-top">
+                      <td class="px-4 py-2 tabular text-text-muted">{i + 1}</td>
+                      <td class="px-4 py-2">
+                        <span class="font-medium">{p.name_a}</span>
+                        <span class="block text-xs text-text-muted">
+                          {authorityLabel(p.authority_a)} · {modeLabel(p.mode_a)} · ~{p.headway_a} min
+                        </span>
+                      </td>
+                      <td class="px-4 py-2">
+                        <span class="font-medium">{p.name_b}</span>
+                        <span class="block text-xs text-text-muted">
+                          {authorityLabel(p.authority_b)} · {modeLabel(p.mode_b)} · ~{p.headway_b} min
+                        </span>
+                      </td>
+                      <td class="px-4 py-2 tabular">{p.dist_m} m</td>
+                      <td class="px-4 py-2 tabular">~{p.wait_min} min</td>
+                      <td class="px-4 py-2 tabular">{p.score.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <SourceTag source="Agency GTFS static (stop geometry) + published agency schedules (headways)"
+            id="coordination"
+            note={`spatial join within ${data.radiusM} m (ST_Distance_Sphere); headways are representative, not real-time`}
+            asOf={data.asOf} />
+        </>
+      ) : (
+        <DataState state="empty" title="No close cross-agency pairs"
+          message={`No stops from two different agencies fall within ${data.radiusM} m for this metro.`} />
+      )}
+    </Stack>
+
+    {hasPairs && (
+      <Stack gap="sm" as="section" aria-labelledby="hw-heading">
+        <h2 id="hw-heading" class="text-[length:var(--text-lg)] font-medium">Headways used</h2>
+        <p class="max-w-[var(--measure)] text-sm text-text-muted">
+          The timing gap uses one representative published headway per agency. These are typical,
+          not real-time — a live GTFS-realtime feed would sharpen them.
+        </p>
+        <div class="overflow-x-auto">
+          <table class="w-full max-w-lg text-left text-sm">
+            <caption class="sr-only">Representative published headway per agency</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Agency</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Headway</th>
+                <th scope="col" class="py-2 font-medium">Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.headways.map((h) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4">{authorityLabel(h.authority_id)}</td>
+                  <td class="py-1.5 pr-4 tabular">~{h.headwayMin} min</td>
+                  <td class="py-1.5">
+                    <a class="underline hover:text-text" href={h.sourceUrl} target="_blank"
+                      rel="noopener noreferrer">{h.service}</a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-xs text-text-muted">
+          Receipts: <span class="tabular">docs/architecture/DATA_SOURCES.md</span>. Stop geometry
+          from each agency's GTFS static feed; distances are great-circle metres.
+        </p>
+      </Stack>
+    )}
+  </Stack>
+</Base>

@@ -1,0 +1,4 @@
+authority_id,headway_min,service,source_url
+cta,10,CTA rail + core bus (representative peak),https://www.transitchicago.com/schedules/
+metra,60,Metra commuter rail (representative off-peak),https://metra.com/maps-schedules
+pace,30,Pace suburban bus (representative),https://www.pacebus.com/schedules

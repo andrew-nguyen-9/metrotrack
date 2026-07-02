@@ -133,3 +133,16 @@ models:
         tests: [not_null]
       - name: dist_cbd_m
         tests: [not_null]   # nonneg + not-null: tests/assert_gold_hex_tod_dist_nonneg.sql
+  - name: gold_stop_pairs
+    description: Cross-agency service-coordination candidates (v3.7) — unordered stop pairs from two different agencies within a walkable transfer radius; great-circle distance (ST_Distance_Sphere), representative agency headways (seed service_headways), expected transfer wait, and a transparent closeness+mismatch score.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: stop_a
+        tests: [not_null]   # (metro_id, authority_a, stop_a, authority_b, stop_b) uniqueness: tests/assert_gold_stop_pairs_unique.sql
+      - name: stop_b
+        tests: [not_null]
+      - name: dist_m
+        tests: [not_null]
+      - name: score
+        tests: [not_null]
