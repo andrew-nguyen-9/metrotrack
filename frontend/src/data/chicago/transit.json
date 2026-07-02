@@ -225,6 +225,12 @@
         21043,
         32524,
         44697
+      ],
+      "cbd_time": [
+        13,
+        27,
+        46,
+        73
       ]
     },
     "topJobs": [
@@ -232,61 +238,71 @@
         "h3": "882664c1a9fffff",
         "jobs": 349153,
         "population": 8810,
-        "access": 630299
+        "access": 630299,
+        "cbd_min": 0.4
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
         "population": 17754,
-        "access": 527089
+        "access": 527089,
+        "cbd_min": 2.3
       },
       {
         "h3": "882664c1a1fffff",
         "jobs": 57580,
         "population": 7084,
-        "access": 537039
+        "access": 537039,
+        "cbd_min": 1.5
       },
       {
         "h3": "882664c1e7fffff",
         "jobs": 51859,
         "population": 10129,
-        "access": 582335
+        "access": 582335,
+        "cbd_min": 0.9
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664c1a5fffff",
         "jobs": 40630,
         "population": 8016,
-        "access": 168283
+        "access": 168283,
+        "cbd_min": 4.6
       },
       {
         "h3": "88275934edfffff",
         "jobs": 37820,
         "population": 0,
-        "access": 77656
+        "access": 77656,
+        "cbd_min": 76.5
       },
       {
         "h3": "882664c1adfffff",
         "jobs": 34968,
         "population": 6248,
-        "access": 255334
+        "access": 255334,
+        "cbd_min": 2.8
       },
       {
         "h3": "8827592249fffff",
         "jobs": 29481,
         "population": 2030,
-        "access": 37169
+        "access": 37169,
+        "cbd_min": 119.0
       },
       {
         "h3": "88275930abfffff",
         "jobs": 26757,
         "population": 3621,
-        "access": 40448
+        "access": 40448,
+        "cbd_min": 115.3
       }
     ],
     "topPopulation": [
@@ -294,61 +310,71 @@
         "h3": "882664c1edfffff",
         "jobs": 8697,
         "population": 20596,
-        "access": 548483
+        "access": 548483,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664c10dfffff",
         "jobs": 2747,
         "population": 18264,
-        "access": 160236
+        "access": 160236,
+        "cbd_min": 3.9
       },
       {
         "h3": "882664c1e3fffff",
         "jobs": 91876,
         "population": 17754,
-        "access": 527089
+        "access": 527089,
+        "cbd_min": 2.3
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664c16bfffff",
         "jobs": 2623,
         "population": 14917,
-        "access": 134924
+        "access": 134924,
+        "cbd_min": 5.2
       },
       {
         "h3": "882664c13bfffff",
         "jobs": 3930,
         "population": 13944,
-        "access": 211079
+        "access": 211079,
+        "cbd_min": 1.7
       },
       {
         "h3": "882664d8c3fffff",
         "jobs": 5821,
         "population": 13310,
-        "access": 65537
+        "access": 65537,
+        "cbd_min": 8.1
       },
       {
         "h3": "882664c1b5fffff",
         "jobs": 4618,
         "population": 12969,
-        "access": 527218
+        "access": 527218,
+        "cbd_min": 1.2
       },
       {
         "h3": "882664c101fffff",
         "jobs": 2304,
         "population": 12625,
-        "access": 210978
+        "access": 210978,
+        "cbd_min": 2.5
       },
       {
         "h3": "882664c1e5fffff",
         "jobs": 12660,
         "population": 12100,
-        "access": 220875
+        "access": 220875,
+        "cbd_min": 2.2
       }
     ],
     "topAccess": [
@@ -356,62 +382,80 @@
         "h3": "882664c1a9fffff",
         "jobs": 349153,
         "population": 8810,
-        "access": 630299
+        "access": 630299,
+        "cbd_min": 0.4
       },
       {
         "h3": "882664c1e7fffff",
         "jobs": 51859,
         "population": 10129,
-        "access": 582335
+        "access": 582335,
+        "cbd_min": 0.9
       },
       {
         "h3": "882664c1e1fffff",
         "jobs": 45022,
         "population": 15083,
-        "access": 577230
+        "access": 577230,
+        "cbd_min": 1.0
       },
       {
         "h3": "882664cf5dfffff",
         "jobs": 2187,
         "population": 2648,
-        "access": 574469
+        "access": 574469,
+        "cbd_min": 0.7
       },
       {
         "h3": "882664cf13fffff",
         "jobs": 234,
         "population": 2443,
-        "access": 573972
+        "access": 573972,
+        "cbd_min": 1.2
       },
       {
         "h3": "882664cf4bfffff",
         "jobs": 2337,
         "population": 4226,
-        "access": 552215
+        "access": 552215,
+        "cbd_min": 0.7
       },
       {
         "h3": "882664cf11fffff",
         "jobs": 311,
         "population": 704,
-        "access": 550116
+        "access": 550116,
+        "cbd_min": 0.8
       },
       {
         "h3": "882664c1edfffff",
         "jobs": 8697,
         "population": 20596,
-        "access": 548483
+        "access": 548483,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664cf57fffff",
         "jobs": 60,
         "population": 689,
-        "access": 545276
+        "access": 545276,
+        "cbd_min": 0.5
       },
       {
         "h3": "882664cc6bfffff",
         "jobs": 340,
         "population": 478,
-        "access": 539944
+        "access": 539944,
+        "cbd_min": 1.0
       }
     ]
-  }
+  },
+  "cbds": [
+    {
+      "cbd_id": "loop",
+      "name": "The Loop",
+      "lon": -87.6298,
+      "lat": 41.8786
+    }
+  ]
 }

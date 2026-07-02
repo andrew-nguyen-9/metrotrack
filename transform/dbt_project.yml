@@ -24,6 +24,10 @@ vars:
   # Walk radius (metres) for the v1.4 straight-line walkshed access score (½ mi ≈
   # 805 m, ACCESS_SCORE G5). Override: `dbt build --vars '{walk_radius_m: 1609}'`.
   walk_radius_m: 805
+  # Nominal door-to-door speed (km/h) for the v3.10 TOD straight-line time-to-CBD.
+  # ~24 km/h ≈ a mixed urban transit trip; crow-flies distance ÷ this is a best-case
+  # (floor) minute estimate, refined by ORS network routing when ORS_API_KEY is set.
+  cbd_speed_kmh: 24
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into

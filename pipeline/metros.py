@@ -36,6 +36,19 @@ class Agency:
 
 
 @dataclass(frozen=True)
+class CBD:
+    """A central business district anchor for the TOD time-to-CBD metric. [v3.10]
+
+    Data-driven + multi: a metro declares N of these in its toml `[[cbd]]` blocks,
+    so adding a district is config, not code (Chicago = the Loop; NYC/SF Bay = many).
+    """
+    id: str
+    name: str
+    lat: float
+    lon: float
+
+
+@dataclass(frozen=True)
 class Metro:
     slug: str
     name: str
@@ -43,6 +56,7 @@ class Metro:
     status: str
     bbox: tuple[float, float, float, float]  # (minLon, minLat, maxLon, maxLat)
     agencies: tuple[Agency, ...]
+    cbds: tuple[CBD, ...] = ()               # TOD central business districts [v3.10]
     raw: dict = field(default_factory=dict, repr=False)  # full parsed toml (census, region, …)
 
     @property
@@ -93,9 +107,21 @@ def parse_metro(slug: str, data: dict) -> Metro:
     need(census, "state_fips", "census.")
     need(census, "lodes_state", "census.")
 
+    # CBDs are optional + data-driven: 0..N per metro (`[[cbd]]` blocks). Validate
+    # each so a bad lat/lon fails loud at config-load, never at map-render.
+    cbds = []
+    for c in (data.get("cbd") or []):
+        cid = need(c, "id", "cbd.")
+        if not SLUG_RE.match(cid):
+            raise ValueError(f"{slug}: cbd id {cid!r} is not a valid kebab slug")
+        lat, lon = float(need(c, "lat", "cbd.")), float(need(c, "lon", "cbd."))
+        if not (-90 <= lat <= 90 and -180 <= lon <= 180):
+            raise ValueError(f"{slug}: cbd {cid!r} lat/lon {(lat, lon)} out of world range")
+        cbds.append(CBD(id=cid, name=need(c, "name", "cbd."), lat=lat, lon=lon))
+
     return Metro(
         slug=slug, name=need(data, "name", ""), tz=need(data, "tz", ""),
-        status=status, bbox=bbox, agencies=tuple(agencies), raw=data,
+        status=status, bbox=bbox, agencies=tuple(agencies), cbds=tuple(cbds), raw=data,
     )
 
 

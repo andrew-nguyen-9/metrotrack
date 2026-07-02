@@ -62,3 +62,23 @@ models:
         tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_access_unique.sql
       - name: jobs_reachable_walk
         tests: [not_null]
+  - name: gold_cbds
+    description: Central-business-district anchors shaped for the spine + TOD export (point WKT, SRID 4326). Data-driven, N per metro.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: cbd_id
+        tests: [not_null]   # (metro_id, cbd_id) uniqueness: tests/assert_gold_cbds_unique.sql
+      - name: geom_wkt
+        tests: [not_null]
+  - name: gold_hex_tod
+    description: TOD serving mart per hex — density (jobs/pop), growth vs prior vintage (jobs/pop %), and straight-line distance + best-case minutes to the nearest configured CBD.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: h3
+        tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_tod_unique.sql
+      - name: nearest_cbd_id
+        tests: [not_null]
+      - name: dist_cbd_m
+        tests: [not_null]   # nonneg + not-null: tests/assert_gold_hex_tod_dist_nonneg.sql

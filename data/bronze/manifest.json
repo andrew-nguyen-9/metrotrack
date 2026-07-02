@@ -8,6 +8,15 @@
     "table": "cenpop_bg",
     "written_at": "2026-06-27T23:37:59.678398+00:00"
   },
+  "chicago/census/cenpop_bg_prior": {
+    "metro": "chicago",
+    "parquet": "data/bronze/chicago/census/cenpop_bg_prior.parquet",
+    "rows": 3993,
+    "sha256": "cb4756eedfadbacc81ddb7f03ff9954c75e04cf57d1d3bf9c2c627d30b5ce201",
+    "source": "census",
+    "table": "cenpop_bg_prior",
+    "written_at": "2026-07-02T05:10:12.428211+00:00"
+  },
   "chicago/census/lodes_wac": {
     "metro": "chicago",
     "parquet": "data/bronze/chicago/census/lodes_wac.parquet",
@@ -16,6 +25,15 @@
     "source": "census",
     "table": "lodes_wac",
     "written_at": "2026-06-27T23:37:59.573111+00:00"
+  },
+  "chicago/census/lodes_wac_prior": {
+    "metro": "chicago",
+    "parquet": "data/bronze/chicago/census/lodes_wac_prior.parquet",
+    "rows": 31168,
+    "sha256": "03d617bfa5eb78b5dcaa3c57d59da43acc08f9586c4b1c81742c158b99cd9495",
+    "source": "census",
+    "table": "lodes_wac_prior",
+    "written_at": "2026-07-02T05:10:12.131828+00:00"
   },
   "chicago/cta/routes": {
     "metro": "chicago",
@@ -151,5 +169,14 @@
     "source": "rta",
     "table": "budget",
     "written_at": "2026-06-28T00:26:20.197397+00:00"
+  },
+  "chicago/tod/cbds": {
+    "metro": "chicago",
+    "parquet": "data/bronze/chicago/tod/cbds.parquet",
+    "rows": 1,
+    "sha256": "db1b2aad40809f425336a23442ab547b303d6673e8ff939a432f5dfb0ca03085",
+    "source": "tod",
+    "table": "cbds",
+    "written_at": "2026-07-02T05:10:42.476507+00:00"
   }
 }

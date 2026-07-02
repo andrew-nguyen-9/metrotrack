@@ -35,7 +35,9 @@ export type HexCell = { h3: string; jobs: number; population: number; access?: n
 export type HexMetric = "jobs" | "population" | "access";
 export type HexData = {
   count: number;
-  breaks: Record<HexMetric, number[]>;
+  // `cbd_time` (minutes to nearest CBD) is a v3.10 TOD overlay break, present when
+  // the tiles carry the TOD mart — optional so the map page stays metric-agnostic.
+  breaks: Record<HexMetric, number[]> & { cbd_time?: number[] };
   topJobs: HexCell[];
   topPopulation: HexCell[];
   topAccess: HexCell[];

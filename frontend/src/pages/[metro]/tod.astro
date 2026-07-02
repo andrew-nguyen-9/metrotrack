@@ -1,0 +1,137 @@
+---
+import Base from "@/layouts/Base.astro";
+import TodChart from "@/components/TodChart.tsx";
+import TodMap from "@/components/TodMap.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, todData, transitData, pmtilesUrl } from "@/lib/metros";
+import { growthDelta, type TodData } from "@/lib/tod";
+import type { TransitData } from "@/lib/transit";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = todData(metro.slug) as TodData;
+const transit = transitData(metro.slug) as TransitData;
+const cbdBreaks = transit.hex.breaks.cbd_time;
+const hasMap = Array.isArray(cbdBreaks) && cbdBreaks.length > 0 && data.cbds.length > 0;
+
+const nf = (n: number) => n.toLocaleString();
+const g = data.growth;
+const cbdNames = data.cbds.map((c) => c.name).join(", ");
+const jobsBase = g.jobsPriorYear ? `${g.jobsPriorYear}→${g.jobsYear}` : `${g.jobsYear}`;
+const popBase = `${g.popPriorYear}→${g.popYear}`;
+---
+
+<Base metro={metro} title={`Transit-oriented development — MetroTrack ${metro.name}`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Density, growth &amp; the pull of the core
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Where the jobs and people are, how that has shifted since the last vintage, and
+        how far each area sits from its nearest central business district
+        ({cbdNames}). Transit works best where density and destinations line up.
+      </p>
+    </Stack>
+
+    <StatBand aria-label="Density and growth headline figures">
+      <Card>
+        <Stat value={nf(data.density.jobs)} label="Jobs (workplace)" hint={`across ${nf(data.density.hexCount)} hex cells · ${g.jobsYear}`}
+          delta={growthDelta(g.jobsGrowthPct)} />
+      </Card>
+      <Card>
+        <Stat value={nf(data.density.population)} label="Residents" hint={`Centers of Population · ${g.popYear}`}
+          delta={growthDelta(g.popGrowthPct)} />
+      </Card>
+      <Card>
+        <Stat value={`${data.cbds.length}`} label={data.cbds.length === 1 ? "Central business district" : "Central business districts"}
+          hint={cbdNames} size="md" />
+      </Card>
+    </StatBand>
+
+    <p class="-mt-4 text-xs text-text-muted">
+      Growth compares each vintage's own regional total — jobs {jobsBase} (LODES8),
+      residents {popBase} (Centers of Population). The arrow shows direction only; a
+      shift up or down isn't inherently good or bad.
+    </p>
+
+    <Stack gap="md" as="section" aria-labelledby="map-heading">
+      <h2 id="map-heading" class="text-[length:var(--text-lg)] font-medium">Minutes to the nearest CBD</h2>
+      <Callout title="How the time is estimated">
+        Each hex is shaded by a <strong>best-case, straight-line</strong> minute estimate to its
+        nearest configured CBD — crow-flies distance ÷ {data.speedKmh}&nbsp;km/h. That is a
+        <strong>floor</strong> on real travel time (a routed transit trip is longer); network
+        isochrones (openrouteservice) refine it when a routing key is configured. The
+        distance itself is exact.
+      </Callout>
+
+      {hasMap ? (
+        <Card class="!p-0 overflow-hidden">
+          <div class="h-[60vh] min-h-80 w-full">
+            <TodMap client:only="react" pmtilesUrl={pmtilesUrl(metro.slug)} bbox={metro.bbox}
+              breaks={cbdBreaks!} cbds={data.cbds} metro={metro.name} />
+          </div>
+        </Card>
+      ) : (
+        <DataState state="coming" title="Map not built yet" message="The time-to-CBD overlay lands once the TOD tiles are generated." />
+      )}
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="rings-heading">
+      <h2 id="rings-heading" class="text-[length:var(--text-lg)] font-medium">Where jobs &amp; people sit, by distance to the CBD</h2>
+      <p class="max-w-[var(--measure)] text-sm text-text-muted">
+        Jobs concentrate near the core; residents spread outward. Each band is a straight-line
+        distance ring around the nearest CBD.
+      </p>
+
+      <Card>
+        <TodChart client:visible rings={data.rings} metro={metro.name} />
+      </Card>
+
+      <SourceTag source="US Census LODES8 (jobs) + Centers of Population (residents)" id="tod"
+        note="density + growth; time-to-CBD is straight-line to authored CBD anchors" asOf={data.asOf} />
+
+      <!-- Accessible, no-JS fallback: chart + map are enhancements; this table carries
+           the same distance-band numbers. -->
+      <details class="rounded-lg border border-hairline bg-surface" open>
+        <summary class="cursor-pointer px-4 py-3 font-medium">Distance bands (table)</summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Hex cells, jobs, and population by straight-line distance ring to the nearest CBD</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Distance to nearest CBD</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Hex cells</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Jobs</th>
+                <th scope="col" class="py-2 font-medium">Population</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.rings.map((r) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4">{r.label}</td>
+                  <td class="py-1.5 pr-4 tabular">{nf(r.hexes)}</td>
+                  <td class="py-1.5 pr-4 tabular">{nf(r.jobs)}</td>
+                  <td class="py-1.5 tabular">{nf(r.population)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-xs text-text-muted">
+          Jobs: U.S. Census LEHD LODES8 (workplace). Population: U.S. Census Centers of
+          Population. Growth compares the prior vintage of each. Distance rings are
+          straight-line to the nearest authored CBD anchor. Receipts:
+          <span class="tabular">docs/architecture/DATA_SOURCES.md</span>.
+        </p>
+      </details>
+    </Stack>
+  </Stack>
+</Base>
