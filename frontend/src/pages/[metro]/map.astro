@@ -44,7 +44,7 @@ const hexTables: { title: string; rows: HexCell[] }[] = [
 
     <div class="mt-4 overflow-hidden rounded-lg border border-hairline bg-surface">
       <div class="h-[60vh] min-h-80 w-full">
-        <TransitMap client:only="react" pmtilesUrl={pmtilesUrl(metro.slug)} bbox={bbox} hex={data.hex} metro={metro.name} />
+        <TransitMap client:only="react" pmtilesUrl={pmtilesUrl(metro.slug)} bbox={bbox} hex={data.hex} routes={data.routes} metro={metro.name} />
       </div>
       <ul class="flex flex-wrap gap-4 border-t border-hairline px-4 py-2 text-sm text-text-muted">
         <li class="flex items-center gap-2" aria-hidden="true">
