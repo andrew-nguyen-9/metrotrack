@@ -25,6 +25,7 @@ import cli
 import funding
 import gtfs
 import hiring
+import live
 import load
 import metros
 import tod
@@ -458,6 +459,27 @@ def main() -> int:
     assert d["dbname"] == "postgres" and d["sslmode"] == "require", d
     assert load.build_conninfo("host=x dbname=y") == "host=x dbname=y"  # non-URL passthrough
     passed.append("load.build_conninfo tolerates a raw '%' password (no URI percent-decode)")
+
+    # live.append_sample — the E11 sampler. No network: exercise the append log
+    # contract (idempotent on `generated`, per-day path, schema guard) with fixtures.
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d) / "bronze"
+        feed = {"metro": "chicago", "generated": "2026-07-02T18:00:00Z",
+                "vehicles": [{"route_id": "9"}], "arrivals": [], "errors": []}
+        p1, a1 = live.append_sample(feed, root=root)
+        assert a1 and p1 == root / "chicago" / "cta_live" / "2026-07-02.ndjson", p1
+        # Re-appending the same instant is a no-op (retry-safe).
+        _, a2 = live.append_sample(feed, root=root)
+        assert not a2 and p1.read_text().count("\n") == 1, p1.read_text()
+        # A later instant appends a new line to the same day log.
+        _, a3 = live.append_sample({**feed, "generated": "2026-07-02T18:00:30Z"}, root=root)
+        assert a3 and p1.read_text().count("\n") == 2, p1.read_text()
+        passed.append("live.append_sample: idempotent NDJSON append keyed by generated ts")
+    try:
+        live.append_sample({"metro": "x"}, root=Path(d))
+        raise AssertionError("append_sample accepted a non-LiveFeed payload")
+    except ValueError:
+        passed.append("live.append_sample rejects a payload missing LiveFeed keys")
 
     # verify_metro — the data-integrity gate the loop reuses (v2.0.6). Exercise it
     # no-network against fixture gold warehouses + bronze manifests: a complete

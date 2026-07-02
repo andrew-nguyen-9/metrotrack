@@ -29,6 +29,10 @@ data/bronze/*/*/routes.parquet
 data/bronze/*/*/trips.parquet
 data/bronze/*/*/shapes.parquet
 
+# Live CTA feed samples (e4a) — an unbounded, runtime-generated append log for E11,
+# not a committed receipt. See pipeline/live.py.
+data/bronze/*/cta_live/
+
 # Tiles (built artifacts, not committed)
 *.pmtiles
 *.mbtiles
