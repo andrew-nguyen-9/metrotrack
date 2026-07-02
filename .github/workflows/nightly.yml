@@ -135,7 +135,10 @@ jobs:
           npx astro build
 
       - name: Redeploy the metrotrack project (production)
-        working-directory: frontend
+        # Run from the repo ROOT, not frontend/. The Vercel project's Root Directory
+        # is already `frontend`, so the CLI appends it once → it reads the prebuilt
+        # `frontend/.vercel/output` that `astro build` wrote above. Running from
+        # frontend/ made the CLI resolve `frontend/frontend` (double-nest) and fail.
         # VERCEL_ORG_ID + VERCEL_PROJECT_ID bind the CLI to the `metrotrack`
         # project explicitly (no .vercel link needed); --prod aliases transit.an9.dev.
         env:

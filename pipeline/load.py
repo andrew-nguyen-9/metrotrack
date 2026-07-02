@@ -18,9 +18,11 @@ import os
 import sys
 from datetime import date
 from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 
 import duckdb
 import psycopg
+import psycopg.conninfo
 
 try:  # dual-mode: `python -m pipeline.load` vs `python pipeline/load.py`
     from . import cli
@@ -129,6 +131,28 @@ def _db_url() -> str:
     return db_url
 
 
+def build_conninfo(db_url: str) -> str:
+    """URL → libpq keyword conninfo, tolerating ANY raw password.
+
+    psycopg's URI parser percent-decodes the password, so a raw password holding a
+    literal '%' (e.g. '%2U…') dies with "invalid percent-encoded token". We split
+    the URL with stdlib and hand libpq keyword params (no decoding) instead, so the
+    secret never needs pre-encoding. # ponytail: stdlib urlsplit, no dependency.
+    """
+    u = urlsplit(db_url)
+    if u.scheme not in ("postgresql", "postgres"):
+        return db_url  # not a URL we recognize — let libpq have it as-is
+    parts = {"host": u.hostname, "port": u.port, "user": u.username,
+             "password": u.password, "dbname": u.path.lstrip("/") or None}
+    parts.update(parse_qsl(u.query))  # sslmode, etc.
+    parts = {k: v for k, v in parts.items() if v not in (None, "")}
+    return psycopg.conninfo.make_conninfo(**parts)
+
+
+def _connect(db_url: str):
+    return psycopg.connect(build_conninfo(db_url))
+
+
 def sync_metros(db_url: str | None = None) -> int:
     """Mirror every metros/<slug>.toml into public.metros. Idempotent (upsert by id)."""
     db_url = db_url or _db_url()
@@ -137,7 +161,7 @@ def sync_metros(db_url: str | None = None) -> int:
     for slug in metros_mod.list_metros():
         m = metros_mod.load_metro(slug)  # validates; a bad config fails here, loudly
         rows.append((m.metro_id, m.name, m.slug, m.tz, m.status, *m.bbox, today))
-    with psycopg.connect(db_url) as pg:
+    with _connect(db_url) as pg:
         with pg.cursor() as cur:
             cur.executemany(METRO_UPSERT, rows)
         pg.commit()
@@ -222,7 +246,7 @@ def main() -> int:
 
     # gold rows already lead with metro_id; append as_of=today (the load date) at the
     # back. vacancy carries its own as_of in the natural key, so it gets metro_id only.
-    with psycopg.connect(db_url) as pg:
+    with _connect(db_url) as pg:
         with pg.cursor() as cur:
             cur.executemany(ROUTE_UPSERT,   [(*r, today) for r in routes])
             cur.executemany(STOP_UPSERT,    [(*r, today) for r in stops])

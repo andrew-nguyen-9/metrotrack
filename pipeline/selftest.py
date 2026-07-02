@@ -25,7 +25,9 @@ import cli
 import funding
 import gtfs
 import hiring
+import load
 import metros
+import psycopg.conninfo
 
 _ALL_SOURCES = ["cta", "metra", "pace", "census", "ntd", "rta", "hiring"]
 _TODAY = date(2026, 6, 28)
@@ -359,6 +361,16 @@ def main() -> int:
     failing.add("bad-check", "fail", "boom")
     assert not failing.ok and "FAIL" in failing.render()
     passed.append("DryRunReport.ok is false when any check fails")
+
+    # load.build_conninfo — a raw '%' in the DB password must survive (libpq's URI
+    # parser would choke on "%2U…"); we hand it keyword params, undecoded. [v3.0]
+    ci = load.build_conninfo(
+        "postgresql://postgres:%2Uab,.Za@db.example.co:5432/postgres?sslmode=require")
+    d = psycopg.conninfo.conninfo_to_dict(ci)
+    assert d["password"] == "%2Uab,.Za" and d["host"] == "db.example.co", d
+    assert d["dbname"] == "postgres" and d["sslmode"] == "require", d
+    assert load.build_conninfo("host=x dbname=y") == "host=x dbname=y"  # non-URL passthrough
+    passed.append("load.build_conninfo tolerates a raw '%' password (no URI percent-decode)")
 
     # verify_metro — the data-integrity gate the loop reuses (v2.0.6). Exercise it
     # no-network against fixture gold warehouses + bronze manifests: a complete
