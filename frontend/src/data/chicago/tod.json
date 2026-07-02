@@ -1,0 +1,61 @@
+{
+  "asOf": "2026-07-02",
+  "cbds": [
+    {
+      "id": "loop",
+      "name": "The Loop",
+      "lat": 41.8786,
+      "lon": -87.6298
+    }
+  ],
+  "speedKmh": 24,
+  "density": {
+    "hexCount": 1934,
+    "jobs": 2616104,
+    "population": 5275541
+  },
+  "growth": {
+    "jobs": 2616104,
+    "jobsPrev": 2508712,
+    "jobsGrowthPct": 4.3,
+    "population": 5275541,
+    "popPrev": 5194675,
+    "popGrowthPct": 1.6,
+    "jobsYear": 2022,
+    "jobsPriorYear": 2019,
+    "popYear": 2020,
+    "popPriorYear": 2010
+  },
+  "rings": [
+    {
+      "label": "\u22642 km",
+      "hexes": 136,
+      "jobs": 829652,
+      "population": 516939
+    },
+    {
+      "label": "\u22645 km",
+      "hexes": 231,
+      "jobs": 276024,
+      "population": 805376
+    },
+    {
+      "label": "\u226410 km",
+      "hexes": 350,
+      "jobs": 284580,
+      "population": 1136345
+    },
+    {
+      "label": "\u226420 km",
+      "hexes": 513,
+      "jobs": 421247,
+      "population": 1409591
+    },
+    {
+      "label": ">20 km",
+      "hexes": 704,
+      "jobs": 804601,
+      "population": 1407290
+    }
+  ]
+}

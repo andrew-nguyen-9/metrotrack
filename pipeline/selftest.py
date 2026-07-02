@@ -27,6 +27,7 @@ import gtfs
 import hiring
 import load
 import metros
+import tod
 import psycopg.conninfo
 import ridership
 
@@ -387,6 +388,20 @@ def main() -> int:
         except ValueError:
             pass
     passed.append("metro validators reject bad slug/bbox/status/mode + empty agencies")
+
+    # ── v3.10 TOD: the CBD anchor list → CSV is pure (no network) + multi-CBD-
+    # ready; a metro with no [[cbd]] fails loud (time-to-CBD needs an anchor).
+    trows = tod.cbds_csv(chi).decode().splitlines()
+    assert trows[0] == "cbd_id,name,lat,lon", trows
+    assert trows[1].startswith("loop,The Loop,41.8786"), trows
+    _nocbd = metros.Metro(slug="x", name="X", tz="UTC", status="live",
+                          bbox=(0.0, 0.0, 1.0, 1.0), agencies=(), raw={})
+    try:
+        tod.cbds_csv(_nocbd)
+        assert False, "cbds_csv should reject a metro with no CBD anchor"
+    except ValueError:
+        pass
+    passed.append("tod.cbds_csv emits sorted CBD rows + rejects a metro with no anchor")
 
     # ── v2.0.3: parametrized pipeline (`--metro`) ──────────────────────────
     # The shared CLI helper resolves the real Chicago config and exits loud on a

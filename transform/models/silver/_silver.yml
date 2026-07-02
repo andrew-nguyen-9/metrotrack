@@ -107,3 +107,21 @@ models:
         tests: [not_null]
       - name: rides
         tests: [not_null]
+  - name: silver_cbds
+    description: Authored central-business-district anchors for the TOD time-to-CBD metric (data-driven, N per metro). One row per (metro, cbd_id).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: cbd_id
+        tests: [not_null]   # (metro_id, cbd_id) uniqueness: tests/assert_silver_cbds_unique.sql
+      - name: lat
+        tests: [not_null]
+      - name: lon
+        tests: [not_null]
+  - name: silver_hex_prior
+    description: Prior-vintage jobs + population aggregated to H3 cells (LODES prior year + 2010 Centers of Population) — the TOD growth baseline. One row per (metro, hex).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: h3
+        tests: [not_null]

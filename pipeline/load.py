@@ -125,6 +125,33 @@ on conflict (metro_id, h3) do update set
   as_of               = excluded.as_of
 """
 
+CBD_UPSERT = """
+insert into public.cbds (metro_id, cbd_id, name, geom, as_of)
+values (%s, %s, %s, extensions.ST_GeomFromText(%s, 4326), %s)
+on conflict (metro_id, cbd_id) do update set
+  name  = excluded.name,
+  geom  = excluded.geom,
+  as_of = excluded.as_of
+"""
+
+TOD_UPSERT = """
+insert into public.hex_tod
+  (metro_id, h3, jobs, population, jobs_prev, pop_prev, jobs_growth_pct,
+   pop_growth_pct, nearest_cbd_id, dist_cbd_m, min_to_cbd, as_of)
+values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+on conflict (metro_id, h3) do update set
+  jobs            = excluded.jobs,
+  population      = excluded.population,
+  jobs_prev       = excluded.jobs_prev,
+  pop_prev        = excluded.pop_prev,
+  jobs_growth_pct = excluded.jobs_growth_pct,
+  pop_growth_pct  = excluded.pop_growth_pct,
+  nearest_cbd_id  = excluded.nearest_cbd_id,
+  dist_cbd_m      = excluded.dist_cbd_m,
+  min_to_cbd      = excluded.min_to_cbd,
+  as_of           = excluded.as_of
+"""
+
 
 def _db_url() -> str:
     db_url = os.environ.get("SUPABASE_A_DB_URL", "")
@@ -239,9 +266,16 @@ def main() -> int:
     access = con.execute(
         "select metro_id, h3, jobs_reachable_walk, walk_radius_m from gold_hex_access"
     ).fetchall()
+    cbds = con.execute(
+        "select metro_id, cbd_id, name, geom_wkt from gold_cbds"
+    ).fetchall()
+    tod = con.execute(
+        "select metro_id, h3, jobs, population, jobs_prev, pop_prev, jobs_growth_pct, "
+        "pop_growth_pct, nearest_cbd_id, dist_cbd_m, min_to_cbd from gold_hex_tod"
+    ).fetchall()
     con.close()
 
-    built = {r[0] for r in routes + stops + hexes + finances + vacancy + access}
+    built = {r[0] for r in routes + stops + hexes + finances + vacancy + access + cbds + tod}
     if built and built != {metro}:
         sys.exit(f"gold metro_id {sorted(built)} != --metro={metro} — rebuild dbt "
                  f"with --vars '{{metro: {metro}}}' before loading")
@@ -256,11 +290,14 @@ def main() -> int:
             cur.executemany(FINANCE_UPSERT, [(*r, today) for r in finances])
             cur.executemany(VACANCY_UPSERT, list(vacancy))
             cur.executemany(ACCESS_UPSERT,  [(*r, today) for r in access])
+            cur.executemany(CBD_UPSERT,     [(*r, today) for r in cbds])
+            cur.executemany(TOD_UPSERT,     [(*r, today) for r in tod])
         pg.commit()
 
     print(f"  ok  loaded {len(routes)} routes, {len(stops)} stops, "
           f"{len(hexes)} hex cells, {len(finances)} finance rows, "
-          f"{len(vacancy)} vacancy rows, {len(access)} access rows → Project A "
+          f"{len(vacancy)} vacancy rows, {len(access)} access rows, "
+          f"{len(cbds)} CBD(s), {len(tod)} TOD hex rows → Project A "
           f"(metro={metro})")
     return 0
 

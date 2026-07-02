@@ -108,11 +108,15 @@ def lodes_url(state: str, year: int) -> str:
     )
 
 
-def cenpop_url(state_fips: str) -> str:
-    """2020 Centers of Population (block-group) file for a state FIPS."""
+def cenpop_url(state_fips: str, year: int = 2020) -> str:
+    """Centers of Population (block-group) file for a state FIPS + decennial year.
+
+    2020 is the current binning source; 2010 is the TOD population-growth baseline
+    (same columns, so parse_cenpop_bg handles both). [v3.10]
+    """
     return (
-        "https://www2.census.gov/geo/docs/reference/cenpop2020/blkgrp/"
-        f"CenPop2020_Mean_BG{state_fips}.txt"
+        f"https://www2.census.gov/geo/docs/reference/cenpop{year}/blkgrp/"
+        f"CenPop{year}_Mean_BG{state_fips}.txt"
     )
 
 
@@ -170,6 +174,9 @@ def parse_cenpop_bg(raw: bytes, state_fips: str = COOK_STATE,
     return out.getvalue().encode()
 
 
+CENPOP_PRIOR_YEAR = 2010  # decennial TOD population-growth baseline [v3.10]
+
+
 def _census_cfg(metro) -> tuple[str, tuple[str, ...], str, int]:
     """(state_fips, county_fips, lodes_state, lodes_year) from a metro's [census]."""
     c = metro.raw.get("census") or {}
@@ -185,6 +192,12 @@ def _acs_years(metro) -> tuple[int, ...]:
     """The ACS 5-year vintages to pull for change-over-time (≥2). From [census].acs_years."""
     c = metro.raw.get("census") or {}
     return tuple(int(y) for y in c.get("acs_years", ACS_DEFAULT_YEARS))
+
+
+def _lodes_prior_year(metro) -> int | None:
+    """The configured jobs-growth baseline LODES vintage, or None if unset. [v3.10]"""
+    c = metro.raw.get("census") or {}
+    return int(c["lodes_prior_year"]) if c.get("lodes_prior_year") else None
 
 
 def fetch_lodes(url: str) -> bytes:
@@ -213,7 +226,13 @@ def dry_run(metro, *, check_network: bool = True) -> "cli.DryRunReport":
 
 
 def ingest(metro) -> int:
-    """Fetch both sources, trim to the metro's counties, write per-metro bronze."""
+    """Fetch both sources, trim to the metro's counties, write per-metro bronze.
+
+    Also fetches the TOD growth baselines when configured — the prior LODES vintage
+    (jobs) and the 2010 Centers of Population (population) — as separate bronze
+    tables (`*_prior.parquet`). Both reuse the same parsers, so growth is real data,
+    not a synthetic figure (docs/architecture/DATA_SOURCES.md). [v3.10]
+    """
     state, counties, lstate, lyear = _census_cfg(metro)
     lodes = bronze.ingest_csv(
         "census", "lodes_wac",
@@ -234,6 +253,23 @@ def ingest(metro) -> int:
         inc = parse_acs_table(fetch_acs(acs_sf_url(year, ACS_TABLES["median_income"])), state, counties)
         r = bronze.ingest_csv("census", f"acs_{year}", build_acs_rows(pop, inc), metro=metro.slug)
         print(f"  ok  {metro.slug}/census/acs_{year}.parquet ({r.rows} tract+county rows)")
+
+    pyear = _lodes_prior_year(metro)
+    if pyear:
+        lodes_p = bronze.ingest_csv(
+            "census", "lodes_wac_prior",
+            parse_lodes_wac(fetch_lodes(lodes_url(lstate, pyear)), state, counties),
+            metro=metro.slug,
+        )
+        cenpop_p = bronze.ingest_csv(
+            "census", "cenpop_bg_prior",
+            parse_cenpop_bg(fetch_cenpop(cenpop_url(state, CENPOP_PRIOR_YEAR)), state, counties),
+            metro=metro.slug,
+        )
+        print(f"  ok  {metro.slug}/census/lodes_wac_prior.parquet "
+              f"({lodes_p.rows} blocks, LODES {pyear})")
+        print(f"  ok  {metro.slug}/census/cenpop_bg_prior.parquet "
+              f"({cenpop_p.rows} block groups, CenPop {CENPOP_PRIOR_YEAR})")
     return 0
 
 

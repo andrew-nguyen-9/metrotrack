@@ -28,6 +28,10 @@ vars:
   # into bronze (metros/<slug>.toml [census].acs_years) + share tract geography.
   acs_prior: 2021
   acs_latest: 2023
+  # Nominal door-to-door speed (km/h) for the v3.10 TOD straight-line time-to-CBD.
+  # ~24 km/h ≈ a mixed urban transit trip; crow-flies distance ÷ this is a best-case
+  # (floor) minute estimate, refined by ORS network routing when ORS_API_KEY is set.
+  cbd_speed_kmh: 24
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into

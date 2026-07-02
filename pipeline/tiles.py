@@ -99,18 +99,29 @@ def export(metro) -> None:
     # Hex choropleth: jobs + population per H3 cell. Geometry is stored as WKT in
     # gold, so rebuild it for ST_AsGeoJSON (same path the Supabase loader uses).
     # Join on (metro_id, h3) so a cell only ever meets its own metro's access score.
+    # cbd_min = straight-line best-case minutes to the nearest CBD (v3.10 TOD overlay).
     hexes = _features(
         con,
         """
         select m.h3, m.jobs, m.population,
                coalesce(a.jobs_reachable_walk, 0) as access,
+               coalesce(t.min_to_cbd, 0) as cbd_min,
                ST_AsGeoJSON(ST_GeomFromText(m.geom_wkt)) as g
         from gold_hex_metrics m
         left join gold_hex_access a on a.metro_id = m.metro_id and a.h3 = m.h3
+        left join gold_hex_tod    t on t.metro_id = m.metro_id and t.h3 = m.h3
         where m.metro_id = ?
         order by m.h3
         """,
-        ["h3", "jobs", "population", "access"],
+        ["h3", "jobs", "population", "access", "cbd_min"],
+        [slug],
+    )
+    # CBD anchors (v3.10) — the time-to-CBD map marker + the page's district list.
+    cbds = _features(
+        con,
+        "select cbd_id, name, ST_AsGeoJSON(ST_GeomFromText(geom_wkt)) as g "
+        "from gold_cbds where metro_id = ? order by cbd_id",
+        ["cbd_id", "name"],
         [slug],
     )
     # Quintile break points (4 thresholds → 5 bins) for the choropleth + legend.
@@ -137,6 +148,11 @@ def export(metro) -> None:
         "select quantile_cont(jobs_reachable_walk, [0.2,0.4,0.6,0.8]) "
         "from gold_hex_access where metro_id = ?", [slug]
     ).fetchone()[0])
+    # Time-to-CBD breaks (minutes) for the TOD overlay + legend (v3.10).
+    breaks["cbd_time"] = _ascending(con.execute(
+        "select quantile_cont(min_to_cbd, [0.2,0.4,0.6,0.8]) "
+        "from gold_hex_tod where metro_id = ?", [slug]
+    ).fetchone()[0])
     # Bounding box across this metro's stops, to frame the initial map view.
     bbox = con.execute(
         "select min(lon), min(lat), max(lon), max(lat) from silver_stops where metro_id = ?",
@@ -152,13 +168,16 @@ def export(metro) -> None:
         rp = Path(d) / "routes.geojson"
         sp = Path(d) / "stops.geojson"
         hp = Path(d) / "hex.geojson"
+        cp = Path(d) / "cbds.geojson"
         rp.write_text(json.dumps({"type": "FeatureCollection", "features": routes}))
         sp.write_text(json.dumps({"type": "FeatureCollection", "features": stops}))
         hp.write_text(json.dumps({"type": "FeatureCollection", "features": hexes}))
+        cp.write_text(json.dumps({"type": "FeatureCollection", "features": cbds}))
         subprocess.run(
             [
                 "tippecanoe", "-o", str(pmtiles), "-f",
                 "-L", f"routes:{rp}", "-L", f"stops:{sp}", "-L", f"hex:{hp}",
+                "-L", f"cbds:{cp}",
                 # -Z5..-z14 bounds zoom (the per-zoom limit, [B11a]); below z5 the
                 # whole metro is a few pixels, above z14 adds bytes without detail.
                 "-Z5", "-z14",
@@ -201,11 +220,15 @@ def export(metro) -> None:
         "stopTotal": len(stops),
         "hex": {
             "count": len(hexes),
-            "breaks": breaks,                       # {jobs, population, access: [..4..]}
+            "breaks": breaks,                       # {jobs, population, access, cbd_time: [..4..]}
             "topJobs": _top("jobs"),
             "topPopulation": _top("population"),
             "topAccess": _top("access"),
         },
+        # CBD anchors for the TOD time-to-CBD overlay marker + legend (v3.10).
+        "cbds": [{**c["properties"],
+                  "lon": c["geometry"]["coordinates"][0],
+                  "lat": c["geometry"]["coordinates"][1]} for c in cbds],
     }, indent=2) + "\n")
     print(f"  ok  {pmtiles.relative_to(REPO)} ({size_mb * 1024:.0f} KB)")
     print(f"  ok  {json_path.relative_to(REPO)} "
