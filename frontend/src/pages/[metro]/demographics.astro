@@ -1,0 +1,151 @@
+---
+import Base from "@/layouts/Base.astro";
+import DemographicsChart from "@/components/DemographicsChart.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, demographicsData } from "@/lib/metros";
+import {
+  type DemographicsData, fmtInt, fmtSigned, fmtPct, fmtUSD, dir,
+} from "@/lib/demographics";
+
+export const getStaticPaths = metroPaths;
+
+const { metro } = Astro.props as { metro: Metro };
+const data = demographicsData(metro.slug) as DemographicsData;
+const c = data.county;
+const { prior, latest } = data.vintages;
+const hasData = data.buckets.some((b) => b.count > 0);
+
+// County headline change. Tone stays muted — a demographic shift isn't inherently
+// good or bad; the arrow is redundant with the sign (honest by construction).
+const stats = [
+  {
+    value: fmtInt(c.pop_latest),
+    label: `Population (ACS ${latest})`,
+    hint: `${fmtInt(c.pop_prior)} in ${prior}`,
+    delta: { value: `${fmtSigned(c.pop_change)} (${fmtPct(c.pop_change_pct)})`, dir: dir(c.pop_change), tone: "muted" as const },
+  },
+  {
+    value: fmtUSD(c.income_latest),
+    label: `Median household income (ACS ${latest})`,
+    hint: `${fmtUSD(c.income_prior)} in ${prior}`,
+    delta: c.income_change != null
+      ? { value: `${c.income_change > 0 ? "+" : ""}${fmtUSD(c.income_change)} nominal`, dir: dir(c.income_change), tone: "muted" as const }
+      : undefined,
+  },
+  {
+    value: fmtInt(data.tractTotal),
+    label: "Census tracts compared",
+    hint: `${prior} vs ${latest}, same geography`,
+  },
+];
+---
+
+<Base metro={metro} title={`Demographic change — MetroTrack ${metro.name}`}
+  description={`How ${metro.name}'s population and household income shifted between the ACS ${prior} and ${latest} 5-year estimates.`}>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        How the metro is changing
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Population and household income across Cook County, compared between two American
+        Community Survey 5-year vintages ({prior} and {latest}). Both sit on the same
+        census-tract map, so the tract-by-tract change is a real signal, not a boundary artifact.
+      </p>
+    </Stack>
+
+    <StatBand aria-label="County demographic change">
+      {stats.map((s) => (
+        <Card>
+          <Stat value={s.value} label={s.label} hint={s.hint} delta={s.delta} />
+        </Card>
+      ))}
+    </StatBand>
+
+    <Stack gap="md" as="section" aria-labelledby="dist-heading">
+      <h2 id="dist-heading" class="text-[length:var(--text-lg)] font-medium">
+        Where the change landed
+      </h2>
+
+      <Callout title="What this is (and isn't)">
+        The county-level totals mask a lot of local movement. The chart below bins every
+        tract by how much its population changed between the two vintages — some
+        neighborhoods grew while others shrank, even as the county edged down overall.
+        Median income is shown in <strong>nominal dollars</strong> (not inflation-adjusted),
+        so part of that rise reflects general price growth over the window.
+      </Callout>
+
+      {hasData ? (
+        <Card>
+          <DemographicsChart client:visible buckets={data.buckets} metro={metro.name} />
+        </Card>
+      ) : (
+        <DataState state="coming" title="No tract data yet" message="The tract-level distribution appears once the ACS vintages are ingested." />
+      )}
+
+      <SourceTag source={data.source.label} id="acs-change" href={data.source.url}
+        note={data.source.note} asOf={`ACS ${prior} & ${latest} 5-year`} />
+
+      <!-- Accessible, no-JS fallback: the chart is an enhancement; these tables carry
+           the same numbers, each band + tract named (not color-coded). -->
+      <details class="rounded-lg border border-hairline bg-surface" open={hasData}>
+        <summary class="cursor-pointer px-4 py-3 font-medium">
+          Population-change distribution + biggest movers (table)
+        </summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="mb-6 w-full text-left text-sm">
+            <caption class="sr-only">Census tracts by population-change band, {prior} to {latest}</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Population change</th>
+                <th scope="col" class="py-2 font-medium">Census tracts</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.buckets.map((b) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4">{b.label}</td>
+                  <td class="py-1.5 tabular">{fmtInt(b.count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Tracts with the largest absolute population change, {prior} to {latest}</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Tract (GEOID)</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Pop. {prior}</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Pop. {latest}</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Change</th>
+                <th scope="col" class="py-2 font-medium">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.movers.map((m) => (
+                <tr class="border-b border-hairline/40">
+                  <td class="py-1.5 pr-4 tabular">{m.geoid}</td>
+                  <td class="py-1.5 pr-4 tabular">{fmtInt(m.pop_prior)}</td>
+                  <td class="py-1.5 pr-4 tabular">{fmtInt(m.pop_latest)}</td>
+                  <td class="py-1.5 pr-4 tabular">{fmtSigned(m.pop_change)}</td>
+                  <td class="py-1.5 tabular">{fmtPct(m.pop_change_pct)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-xs text-text-muted">
+          Source: US Census ACS 5-year Summary File, tables B01003 + B19013. Methodology +
+          receipts: <span class="tabular">docs/architecture/DATA_SOURCES.md</span>.
+        </p>
+      </details>
+    </Stack>
+  </Stack>
+</Base>

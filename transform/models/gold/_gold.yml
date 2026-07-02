@@ -62,3 +62,18 @@ models:
         tests: [not_null]   # (metro_id, h3) uniqueness: tests/assert_gold_hex_access_unique.sql
       - name: jobs_reachable_walk
         tests: [not_null]
+  - name: gold_demographic_change
+    description: ACS 5-year population + median-income change per geography (county rollup + tracts), for the spine + demographics.json.
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: geo_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["tract", "county"]
+      - name: geoid
+        tests: [not_null]   # (metro_id, geo_level, geoid) uniqueness: tests/assert_gold_demographic_unique.sql
+      - name: pop_latest
+        tests: [not_null]

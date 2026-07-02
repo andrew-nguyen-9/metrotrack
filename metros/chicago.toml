@@ -20,6 +20,8 @@ state_fips  = "17"                # Illinois
 county_fips = ["031"]             # Cook County (v1 scope; collar counties later)
 lodes_state = "il"                # LEHD LODES8 state slug
 lodes_year  = 2022                # latest stable LODES8 vintage
+acs_years   = [2021, 2023]        # ACS 5-yr vintages for demographic change (v3.9). Both
+                                  # sit on 2020 census tracts → valid per-tract change.
 
 # ── agencies ────────────────────────────────────────────────────────────
 # mode: bus | rail | multi. ntd_ids: FTA National Transit Database reporter ids

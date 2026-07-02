@@ -43,6 +43,23 @@ models:
         tests: [not_null]
       - name: fiscal_year
         tests: [not_null]
+  - name: silver_acs_change
+    description: Two ACS 5-year vintages joined per geography — population + median-income change. One row per (metro, geo_level, geoid).
+    columns:
+      - name: metro_id
+        tests: [not_null]
+      - name: geo_level
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["tract", "county"]
+      - name: geoid
+        tests: [not_null]   # (metro_id, geo_level, geoid) uniqueness: tests/assert_silver_acs_unique.sql
+      - name: pop_prior
+        tests: [not_null]
+      - name: pop_latest
+        tests: [not_null]
   - name: silver_vacancy
     description: Weekly open-postings snapshots per service board (one row per metro × authority × date).
     columns:

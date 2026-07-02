@@ -6,6 +6,7 @@ import metrosJson from "../data/metros.json";
 import type { TransitData } from "./transit";
 import type { FundingData } from "./funding";
 import type { HiringData } from "./hiring";
+import type { DemographicsData } from "./demographics";
 
 export type MetroStatus = "live" | "soon";
 
@@ -51,6 +52,7 @@ export const pmtilesUrl = (slug: string): string => `/${slug}/transit.pmtiles`;
 const transitFiles = import.meta.glob<TransitData>("../data/*/transit.json", { eager: true, import: "default" });
 const fundingFiles = import.meta.glob<FundingData>("../data/*/funding.json", { eager: true, import: "default" });
 const hiringFiles = import.meta.glob<HiringData>("../data/*/hiring.json", { eager: true, import: "default" });
+const demographicsFiles = import.meta.glob<DemographicsData>("../data/*/demographics.json", { eager: true, import: "default" });
 
 const pick = <T>(files: Record<string, T>, slug: string, kind: string): T => {
   const hit = Object.entries(files).find(([path]) => path.includes(`/data/${slug}/`));
@@ -61,6 +63,7 @@ const pick = <T>(files: Record<string, T>, slug: string, kind: string): T => {
 export const transitData = (slug: string): TransitData => pick(transitFiles, slug, "transit");
 export const fundingData = (slug: string): FundingData => pick(fundingFiles, slug, "funding");
 export const hiringData = (slug: string): HiringData => pick(hiringFiles, slug, "hiring");
+export const demographicsData = (slug: string): DemographicsData => pick(demographicsFiles, slug, "demographics");
 
 // Job-access export does not exist yet (the access pillar lands later — v2.5 [L*]).
 // Pages degrade gracefully on this; see [metro]/job-access.astro.
