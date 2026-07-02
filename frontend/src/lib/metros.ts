@@ -7,6 +7,7 @@ import type { TransitData } from "./transit";
 import type { FundingData } from "./funding";
 import type { HiringData } from "./hiring";
 import type { RidershipData } from "./ridership";
+import type { DemographicsData } from "./demographics";
 
 export type MetroStatus = "live" | "soon";
 
@@ -61,6 +62,7 @@ const transitFiles = import.meta.glob<TransitData>("../data/*/transit.json", { e
 const fundingFiles = import.meta.glob<FundingData>("../data/*/funding.json", { eager: true, import: "default" });
 const hiringFiles = import.meta.glob<HiringData>("../data/*/hiring.json", { eager: true, import: "default" });
 const ridershipFiles = import.meta.glob<RidershipData>("../data/*/ridership.json", { eager: true, import: "default" });
+const demographicsFiles = import.meta.glob<DemographicsData>("../data/*/demographics.json", { eager: true, import: "default" });
 
 const pick = <T>(files: Record<string, T>, slug: string, kind: string): T => {
   const hit = Object.entries(files).find(([path]) => path.includes(`/data/${slug}/`));
@@ -72,6 +74,7 @@ export const transitData = (slug: string): TransitData => pick(transitFiles, slu
 export const fundingData = (slug: string): FundingData => pick(fundingFiles, slug, "funding");
 export const hiringData = (slug: string): HiringData => pick(hiringFiles, slug, "hiring");
 export const ridershipData = (slug: string): RidershipData => pick(ridershipFiles, slug, "ridership");
+export const demographicsData = (slug: string): DemographicsData => pick(demographicsFiles, slug, "demographics");
 
 // Job access reads the hex slice of transit.json (the gold_hex_access score, exported
 // by pipeline/tiles.py) — see [metro]/job-access.astro. No separate loader needed.

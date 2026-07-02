@@ -1,0 +1,117 @@
+{
+  "vintages": {
+    "prior": 2021,
+    "latest": 2023
+  },
+  "source": {
+    "label": "US Census Bureau \u2014 American Community Survey (ACS) 5-year estimates, table-based Summary File",
+    "note": "Tables B01003 (total population) and B19013 (median household income), tract + county rollup for Cook County, IL. Median income is nominal (not inflation-adjusted).",
+    "url": "https://www.census.gov/programs-surveys/acs/data/summary-file.html"
+  },
+  "county": {
+    "year_prior": 2021,
+    "year_latest": 2023,
+    "pop_prior": 5265398,
+    "pop_latest": 5185812,
+    "pop_change": -79586,
+    "pop_change_pct": -1.5114906793370606,
+    "income_prior": 72121,
+    "income_latest": 81797,
+    "income_change": 9676
+  },
+  "tractTotal": 1332,
+  "buckets": [
+    {
+      "label": "Strong decline (\u2264 -10%)",
+      "count": 138
+    },
+    {
+      "label": "Decline (-10% to -3%)",
+      "count": 435
+    },
+    {
+      "label": "Roughly stable (\u00b13%)",
+      "count": 434
+    },
+    {
+      "label": "Growth (+3% to +10%)",
+      "count": 213
+    },
+    {
+      "label": "Strong growth (\u2265 +10%)",
+      "count": 108
+    }
+  ],
+  "movers": [
+    {
+      "geoid": "17031080400",
+      "pop_prior": 4699,
+      "pop_latest": 5986,
+      "pop_change": 1287,
+      "pop_change_pct": 27.38880612896361
+    },
+    {
+      "geoid": "17031320101",
+      "pop_prior": 7952,
+      "pop_latest": 9208,
+      "pop_change": 1256,
+      "pop_change_pct": 15.79476861167002
+    },
+    {
+      "geoid": "17031380600",
+      "pop_prior": 4044,
+      "pop_latest": 5236,
+      "pop_change": 1192,
+      "pop_change_pct": 29.475766567754697
+    },
+    {
+      "geoid": "17031081800",
+      "pop_prior": 11295,
+      "pop_latest": 12366,
+      "pop_change": 1071,
+      "pop_change_pct": 9.48207171314741
+    },
+    {
+      "geoid": "17031080300",
+      "pop_prior": 5018,
+      "pop_latest": 6063,
+      "pop_change": 1045,
+      "pop_change_pct": 20.825029892387406
+    },
+    {
+      "geoid": "17031843500",
+      "pop_prior": 10528,
+      "pop_latest": 8470,
+      "pop_change": -2058,
+      "pop_change_pct": -19.54787234042553
+    },
+    {
+      "geoid": "17031530503",
+      "pop_prior": 5574,
+      "pop_latest": 4160,
+      "pop_change": -1414,
+      "pop_change_pct": -25.36777897380696
+    },
+    {
+      "geoid": "17031520400",
+      "pop_prior": 4805,
+      "pop_latest": 3739,
+      "pop_change": -1066,
+      "pop_change_pct": -22.18522372528616
+    },
+    {
+      "geoid": "17031823002",
+      "pop_prior": 5611,
+      "pop_latest": 4684,
+      "pop_change": -927,
+      "pop_change_pct": -16.521119230083762
+    },
+    {
+      "geoid": "17031510200",
+      "pop_prior": 4017,
+      "pop_latest": 3138,
+      "pop_change": -879,
+      "pop_change_pct": -21.88200149365198
+    }
+  ]
+}

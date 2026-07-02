@@ -214,6 +214,31 @@ def main() -> int:
     assert crows[1] == "170310001001,1135,41.880000,-087.630000" and len(crows) == 2, crows
     passed.append("parse_cenpop_bg assembles bg_geoid, strips BOM/+, filters Cook")
 
+    # ACS table-based Summary File parse (v3.9) — keeps the county rollup + Cook
+    # tracts, drops other geographies, reads the estimate col by NAME (a trailing
+    # margin col proves we don't index by position).
+    acs_pop = census.parse_acs_table(
+        b"GEO_ID|B01003_E001|B01003_M001\n"
+        b"0100000US|331097593|-555555555\n"          # nation — dropped
+        b"0500000US17031|5265398|1234\n"             # Cook county rollup — kept
+        b"1400000US17031010100|4534|321\n"           # Cook tract — kept
+        b"1400000US17001000100|999|10\n"             # Adams county tract — dropped
+    )
+    assert acs_pop["17031"] == ("county", "5265398"), acs_pop
+    assert acs_pop["17031010100"] == ("tract", "4534") and len(acs_pop) == 2, acs_pop
+    passed.append("parse_acs_table keeps county+Cook tracts, drops others, reads _E001 by name")
+
+    # build_acs_rows merges the population + median-income maps by geoid (sorted),
+    # tolerating a geoid missing from the income table (blank cell, not a crash).
+    acs_inc = {"17031": ("county", "72121"), "17031010100": ("tract", "60000")}
+    csv_rows = census.build_acs_rows(acs_pop, acs_inc).decode().splitlines()
+    assert csv_rows[0] == "geoid,geo_level,population,median_income", csv_rows
+    assert csv_rows[1] == "17031,county,5265398,72121", csv_rows
+    assert csv_rows[2] == "17031010100,tract,4534,60000", csv_rows
+    missing_inc = census.build_acs_rows({"17031999999": ("tract", "10")}, {}).decode().splitlines()
+    assert missing_inc[1] == "17031999999,tract,10,", missing_inc  # blank income, no crash
+    passed.append("build_acs_rows merges pop+income by geoid, tolerates missing income")
+
     # NTD parse — Chicago reporters only; Pace's two reports fold into one line;
     # foreign agencies dropped; numeric fields summed.
     ntd = funding.parse_ntd(json.dumps([

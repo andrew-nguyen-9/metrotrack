@@ -24,6 +24,10 @@ vars:
   # Walk radius (metres) for the v1.4 straight-line walkshed access score (½ mi ≈
   # 805 m, ACCESS_SCORE G5). Override: `dbt build --vars '{walk_radius_m: 1609}'`.
   walk_radius_m: 805
+  # ACS 5-year vintages for demographic change (v3.9). Must match the years pulled
+  # into bronze (metros/<slug>.toml [census].acs_years) + share tract geography.
+  acs_prior: 2021
+  acs_latest: 2023
 
 # Medallion layers. dbt owns silver (typed, deduped, geometry-validated) and gold
 # (serving marts). Silver is materialized as a table so geometry is baked into
