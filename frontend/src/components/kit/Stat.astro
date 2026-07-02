@@ -1,0 +1,30 @@
+---
+// Stat — a single instrument readout: big tabular figure + label + optional
+// delta. Figures are always mono/tabular so columns align (DIRECTION §1).
+interface Props {
+  value: string | number;   // pre-formatted (caller does toLocaleString etc.)
+  label: string;
+  hint?: string;            // small clarifier under the label
+  delta?: { value: string; dir?: "up" | "down"; tone?: "pos" | "neg" | "muted" };
+  size?: "md" | "lg";
+  class?: string;
+}
+const { value, label, hint, delta, size = "lg", class: className } = Astro.props;
+const valueCls = size === "lg" ? "text-[length:var(--text-2xl)]" : "text-[length:var(--text-lg)]";
+const tone = delta?.tone ?? (delta?.dir === "down" ? "neg" : "pos");
+const toneCls = tone === "neg" ? "text-delta-neg" : tone === "muted" ? "text-text-muted" : "text-delta-pos";
+// Arrow is redundant with color so the sign of a change never relies on hue.
+const arrow = delta?.dir === "up" ? "▲" : delta?.dir === "down" ? "▼" : "";
+---
+
+<div class={className}>
+  <div class:list={["tabular font-semibold leading-[var(--leading-tight)]", valueCls]}>{value}</div>
+  <div class="mt-1 text-sm text-text-muted">{label}</div>
+  {hint && <div class="text-xs text-text-muted/80">{hint}</div>}
+  {delta && (
+    <div class:list={["mt-1 flex items-center gap-1 text-sm tabular", toneCls]}>
+      {arrow && <span aria-hidden="true">{arrow}</span>}
+      <span>{delta.value}</span>
+    </div>
+  )}
+</div>

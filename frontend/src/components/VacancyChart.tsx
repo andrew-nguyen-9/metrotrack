@@ -10,27 +10,20 @@ import { CanvasRenderer } from "echarts/renderers";
 import {
   authorityLabel, snapshotDates, rowsFor, type VacancyRow,
 } from "../lib/hiring";
+import { useChartTheme, SERIES_SYMBOLS, type ChartTheme } from "../lib/chart";
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, AriaComponent, CanvasRenderer]);
 
 type Props = { rows: VacancyRow[]; authorities: string[]; metro?: string };
 
-// Per-authority line color (data encoding) — paired with a distinct marker SYMBOL so
-// color is never the only signal (legend + symbols + table). (ponytail: literals like
-// TransitMap's BG/STOP; agency brand colors aren't tokenized in TOKENS.md.)
-const SERIES: Record<string, { color: string; symbol: string }> = {
-  cta: { color: "#2bb8cf", symbol: "circle" },
-  metra: { color: "#e09a36", symbol: "triangle" },
-  pace: { color: "#9b8cf0", symbol: "rect" },
-};
-
-const cssVar = (el: Element, name: string): string =>
-  getComputedStyle(el).getPropertyValue(name).trim();
-
-function buildOption(rows: VacancyRow[], authorities: string[], theme: { text: string; muted: string; line: string }) {
+// Series color comes from the shared categorical ramp (theme.cat — colorblind
+// aware) and each line carries a distinct marker SYMBOL, so color is never the
+// only signal (legend + symbols + table).
+function buildOption(rows: VacancyRow[], authorities: string[], theme: ChartTheme) {
   const dates = snapshotDates(rows);
   return {
-    animation: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    animation: !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      && document.documentElement.getAttribute("data-motion") !== "reduce",
     aria: { enabled: true, decal: { show: true } },
     grid: { left: 8, right: 16, top: 36, bottom: 8, containLabel: true },
     legend: { top: 0, textStyle: { color: theme.text }, inactiveColor: theme.muted },
@@ -49,14 +42,13 @@ function buildOption(rows: VacancyRow[], authorities: string[], theme: { text: s
       axisLabel: { color: theme.muted },
       splitLine: { lineStyle: { color: theme.line } },
     },
-    series: authorities.map((a) => {
+    series: authorities.map((a, i) => {
       const byDate = new Map(rowsFor(rows, a).map((r) => [r.as_of, r.open_postings]));
-      const s = SERIES[a] ?? { color: theme.text, symbol: "circle" };
       return {
         name: authorityLabel(a),
         type: "line",
-        color: s.color,
-        symbol: s.symbol,
+        color: theme.cat[i % theme.cat.length],
+        symbol: SERIES_SYMBOLS[i % SERIES_SYMBOLS.length],
         symbolSize: 9,
         showSymbol: true,      // 1–2 snapshots render as visible points
         connectNulls: false,
@@ -70,6 +62,7 @@ export default function VacancyChart({ rows, authorities, metro }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [error, setError] = useState(false);
+  const theme = useChartTheme();
 
   useEffect(() => {
     if (!ref.current) return;
@@ -85,17 +78,12 @@ export default function VacancyChart({ rows, authorities, metro }: Props) {
     }
   }, []);
 
+  // Re-render option whenever data OR the live theme (dark/light/colorblind) changes.
   useEffect(() => {
     const chart = chartRef.current;
-    if (!chart || !ref.current) return;
-    const root = document.documentElement;
-    const theme = {
-      text: cssVar(root, "--text") || "#eee",
-      muted: cssVar(root, "--text-muted") || "#aaa",
-      line: cssVar(ref.current, "--color-hairline") || "rgba(140,148,163,0.3)",
-    };
+    if (!chart) return;
     chart.setOption(buildOption(rows, authorities, theme), true);
-  }, [rows, authorities]);
+  }, [rows, authorities, theme]);
 
   if (error) {
     return (

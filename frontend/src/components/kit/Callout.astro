@@ -1,0 +1,25 @@
+---
+// Callout — an aside that carries a caveat, note, or warning (the "honest by
+// construction" voice: methodology caveats, stale-data warnings). Tone is
+// signalled by a text label + border, never color alone.
+interface Props {
+  tone?: "note" | "warning" | "accent";
+  title?: string;
+  class?: string;
+}
+const { tone = "note", title, class: className } = Astro.props;
+const toneCfg = {
+  note:    { border: "border-hairline",           bar: "bg-text-muted", label: title ?? "Note" },
+  warning: { border: "border-warning/50",         bar: "bg-warning",    label: title ?? "Heads up" },
+  accent:  { border: "border-accent/40",          bar: "bg-accent",     label: title ?? null },
+} as const;
+const c = toneCfg[tone];
+---
+
+<aside class:list={["flex gap-3 rounded-lg border bg-surface p-4", c.border, className]}>
+  <span aria-hidden="true" class:list={["mt-0.5 w-1 shrink-0 rounded-full", c.bar]}></span>
+  <div class="text-sm">
+    {c.label && <p class="font-medium text-text">{c.label}</p>}
+    <div class="text-text-muted [&_a]:underline"><slot /></div>
+  </div>
+</aside>

@@ -1,85 +1,125 @@
 ---
-import Base from "../../layouts/Base.astro";
-import VacancyChart from "../../components/VacancyChart.tsx";
-import { type Metro, metroPaths, hiringData } from "../../lib/metros";
+import Base from "@/layouts/Base.astro";
+import VacancyChart from "@/components/VacancyChart.tsx";
+import Stack from "@/components/kit/Stack.astro";
+import Card from "@/components/kit/Card.astro";
+import Stat from "@/components/kit/Stat.astro";
+import StatBand from "@/components/kit/StatBand.astro";
+import Callout from "@/components/kit/Callout.astro";
+import SourceTag from "@/components/kit/SourceTag.astro";
+import DataState from "@/components/kit/DataState.astro";
+import { type Metro, metroPaths, hiringData } from "@/lib/metros";
 import {
   authorityLabel, authorities, rowsFor, type HiringData,
-} from "../../lib/hiring";
+} from "@/lib/hiring";
 
 export const getStaticPaths = metroPaths;
 
 const { metro } = Astro.props as { metro: Metro };
 const data = hiringData(metro.slug) as HiringData;
 const auths = authorities(data.rows);
+const hasData = data.rows.length > 0;
+
+// Latest open-postings per service board (+ delta vs the prior snapshot). The
+// delta arrow is redundant with color and the tone is muted — a change in hiring
+// activity isn't inherently good or bad (honest by construction).
+const latest = auths.map((a) => {
+  const rs = rowsFor(data.rows, a);
+  const last = rs[rs.length - 1];
+  const prev = rs[rs.length - 2];
+  const diff = last && prev ? last.open_postings - prev.open_postings : null;
+  return {
+    label: authorityLabel(a),
+    value: last ? last.open_postings.toLocaleString() : "—",
+    asOf: last?.as_of,
+    delta: diff != null && diff !== 0
+      ? { value: `${diff > 0 ? "+" : ""}${diff} vs prior`, dir: diff > 0 ? "up" as const : "down" as const, tone: "muted" as const }
+      : undefined,
+  };
+});
 ---
 
 <Base metro={metro} title={`Hiring — MetroTrack ${metro.name}`}>
-  <section class="max-w-2xl">
-    <h1 class="text-3xl sm:text-4xl font-semibold tracking-tight">
-      Who's hiring, tracked weekly
-    </h1>
-    <p class="mt-4 text-text-muted text-lg">
-      Open job postings at CTA, Metra, and Pace, snapshotted every week. The trend is
-      the point — it thickens as the weeks accumulate.
-    </p>
-  </section>
-
-  <section class="mt-10" aria-labelledby="chart-heading">
-    <h2 id="chart-heading" class="text-xl font-medium">Open postings over time</h2>
-    <p class="mt-1 text-sm text-text-muted max-w-3xl">
-      Each line is one service board's count of currently-listed job postings, taken
-      weekly from the authority's own careers site. This is <strong>hiring activity</strong>,
-      not a vacancy rate or an understaffing measure — counts aren't normalized by
-      budgeted headcount, and a high count can mean growth as easily as churn. The
-      rider-felt service-shortfall headline (scheduled vs. delivered service) lands
-      once realtime delivery data is ingested.
-    </p>
-
-    <div class="mt-4 rounded-lg border border-hairline bg-surface p-4">
-      <VacancyChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
-    </div>
-
-    <p class="mt-2 text-xs text-text-muted">
-      Source: {data.source.label}. {data.source.note}
-      {data.asOf && <> Latest snapshot: <span class="tabular">{data.asOf}</span>.</>}
-    </p>
-
-    <!-- Accessible, no-JS fallback: the chart is an enhancement; this table carries
-         the same numbers, with each authority named (not color-coded). -->
-    <details class="mt-4 rounded-lg border border-hairline bg-surface" open>
-      <summary class="cursor-pointer px-4 py-3 font-medium">
-        Open-postings data (table)
-      </summary>
-      <div class="overflow-x-auto px-4 pb-4">
-        <table class="w-full text-left text-sm">
-          <caption class="sr-only">Weekly open job postings by service board and snapshot date</caption>
-          <thead>
-            <tr class="border-b border-hairline text-text-muted">
-              <th scope="col" class="py-2 pr-4 font-medium">Service board</th>
-              <th scope="col" class="py-2 pr-4 font-medium">Snapshot date</th>
-              <th scope="col" class="py-2 font-medium">Open postings</th>
-            </tr>
-          </thead>
-          <tbody>
-            {auths.map((a) => (
-              <>
-                {rowsFor(data.rows, a).map((r, i) => (
-                  <tr class="border-b border-hairline/40">
-                    <td class="py-1.5 pr-4">{i === 0 ? authorityLabel(a) : ""}</td>
-                    <td class="py-1.5 pr-4 tabular">{r.as_of}</td>
-                    <td class="py-1.5 tabular">{r.open_postings.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p class="px-4 pb-4 text-xs text-text-muted">
-        Counts are postings listed on each authority's careers site (CTA via Taleo,
-        Metra via Cadient, Pace via Oracle Recruiting). Methodology + receipts:
-        <span class="tabular">data/bronze/hiring/SOURCE.md</span>.
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Who's hiring, tracked weekly
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        Open job postings at CTA, Metra, and Pace, snapshotted every week. The trend is
+        the point — it thickens as the weeks accumulate.
       </p>
-    </details>
-  </section>
+    </Stack>
+
+    {hasData && (
+      <StatBand aria-label="Latest open postings by service board">
+        {latest.map((s) => (
+          <Card>
+            <Stat value={s.value} label={`${s.label} — open postings`} hint={s.asOf ? `as of ${s.asOf}` : undefined} delta={s.delta} />
+          </Card>
+        ))}
+      </StatBand>
+    )}
+
+    <Stack gap="md" as="section" aria-labelledby="chart-heading">
+      <h2 id="chart-heading" class="text-[length:var(--text-lg)] font-medium">Open postings over time</h2>
+
+      <Callout title="What this is (and isn't)">
+        Each line is one service board's count of currently-listed job postings, taken
+        weekly from the authority's own careers site. This is <strong>hiring activity</strong>,
+        not a vacancy rate or an understaffing measure — counts aren't normalized by
+        budgeted headcount, and a high count can mean growth as easily as churn. The
+        rider-felt service-shortfall headline (scheduled vs. delivered service) lands
+        once realtime delivery data is ingested.
+      </Callout>
+
+      {hasData ? (
+        <Card>
+          <VacancyChart client:visible rows={data.rows} authorities={auths} metro={metro.name} />
+        </Card>
+      ) : (
+        <DataState state="coming" title="No snapshots yet" message="The weekly hiring trend begins once the first careers-site snapshot is collected." />
+      )}
+
+      <SourceTag source={data.source.label} id="hiring" note={data.source.note} asOf={data.asOf} />
+
+      <!-- Accessible, no-JS fallback: the chart is an enhancement; this table carries
+           the same numbers, with each authority named (not color-coded). -->
+      <details class="rounded-lg border border-hairline bg-surface" open={hasData}>
+        <summary class="cursor-pointer px-4 py-3 font-medium">
+          Open-postings data (table)
+        </summary>
+        <div class="overflow-x-auto px-4 pb-4">
+          <table class="w-full text-left text-sm">
+            <caption class="sr-only">Weekly open job postings by service board and snapshot date</caption>
+            <thead>
+              <tr class="border-b border-hairline text-text-muted">
+                <th scope="col" class="py-2 pr-4 font-medium">Service board</th>
+                <th scope="col" class="py-2 pr-4 font-medium">Snapshot date</th>
+                <th scope="col" class="py-2 font-medium">Open postings</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auths.map((a) => (
+                <>
+                  {rowsFor(data.rows, a).map((r, i) => (
+                    <tr class="border-b border-hairline/40">
+                      <td class="py-1.5 pr-4">{i === 0 ? authorityLabel(a) : ""}</td>
+                      <td class="py-1.5 pr-4 tabular">{r.as_of}</td>
+                      <td class="py-1.5 tabular">{r.open_postings.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="px-4 pb-4 text-xs text-text-muted">
+          Counts are postings listed on each authority's careers site (CTA via Taleo,
+          Metra via Cadient, Pace via Oracle Recruiting). Methodology + receipts:
+          <span class="tabular">data/bronze/hiring/SOURCE.md</span>.
+        </p>
+      </details>
+    </Stack>
+  </Stack>
 </Base>

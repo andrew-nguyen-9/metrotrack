@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import maplibregl, { type StyleSpecification, type ExpressionSpecification } from "maplibre-gl";
-import { Protocol } from "pmtiles";
-import "maplibre-gl/dist/maplibre-gl.css";
+import type { StyleSpecification, ExpressionSpecification } from "maplibre-gl";
+import maplibregl from "maplibre-gl";
+import MapShell, { MapPanel } from "./MapShell";
 import {
   HEX_RAMPS, HEX_LABELS, hexBinLabels,
   type HexData, type HexMetric,
 } from "../lib/transit";
+
+// TransitMap — the reference consumer of MapShell (proves the map shell). It owns
+// the transit-specific style, overlay layer-control, legend, and click popup;
+// MapShell owns init/protocol/resize/error.
 
 type Overlay = "none" | HexMetric;
 
@@ -13,7 +17,6 @@ type Props = {
   pmtilesUrl: string;
   bbox: [number, number, number, number];
   hex: HexData;
-  // Metro name for the accessible label; data + bbox are the only per-metro inputs.
   metro?: string;
 };
 
@@ -24,7 +27,6 @@ const BG = "#0b0f14";
 const STOP = "#2bb8cf"; // accent cyan
 const ROUTE_FALLBACK = "#8a94a3";
 
-// Choropleth step: v < b0 → ramp0 … ≥ b3 → ramp4 (matches hexBinLabels).
 const hexFill = (metric: HexMetric, breaks: number[]): ExpressionSpecification => {
   const r = HEX_RAMPS[metric];
   return [
@@ -48,8 +50,6 @@ const style = (pmtilesUrl: string, hex: HexData): StyleSpecification => ({
   },
   layers: [
     { id: "bg", type: "background", paint: { "background-color": BG } },
-    // Hex choropleths sit BELOW routes/stops so the network stays readable on top.
-    // Both start hidden; the overlay radio toggles exactly one on.
     {
       id: "hex-jobs", type: "fill", source: "transit", "source-layer": "hex",
       layout: { visibility: "none" },
@@ -96,34 +96,12 @@ const LAYER: Record<HexMetric, string> = {
 };
 
 export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
-  const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const overlayRef = useRef<Overlay>("none");
   const [overlay, setOverlay] = useState<Overlay>("none");
-  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (!ref.current) return;
-    const protocol = new Protocol();
-    maplibregl.addProtocol("pmtiles", protocol.tile);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const map = new maplibregl.Map({
-      container: ref.current,
-      style: style(pmtilesUrl, hex),
-      bounds: bbox,
-      fitBoundsOptions: { padding: 24, animate: false },
-      attributionControl: { compact: true },
-      dragRotate: false,
-      ...(reduce ? { fadeDuration: 0 } : {}),
-    });
+  const onReady = (map: maplibregl.Map) => {
     mapRef.current = map;
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.on("error", (e) => {
-      console.error("[map]", e.error?.message ?? e);
-      setError(true);
-    });
-
     // Click a hex (only the visible overlay returns features) → exact values popup.
     map.on("click", (e) => {
       const ov = overlayRef.current;
@@ -142,24 +120,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
         )
         .addTo(map);
     });
-
-    // Refit on container resize until the user takes over the camera.
-    let userMoved = false;
-    map.on("dragstart", () => { userMoved = true; });
-    map.on("zoomstart", (ev) => { if (ev.originalEvent) userMoved = true; });
-    const ro = new ResizeObserver(() => {
-      map.resize();
-      if (!userMoved) map.fitBounds(bbox, { padding: 24, animate: false });
-    });
-    ro.observe(ref.current);
-
-    return () => {
-      ro.disconnect();
-      map.remove();
-      mapRef.current = null;
-      maplibregl.removeProtocol("pmtiles");
-    };
-  }, [pmtilesUrl, bbox, hex]);
+  };
 
   // Toggle overlay visibility when the radio changes.
   useEffect(() => {
@@ -177,16 +138,14 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
   const labels = activeBreaks ? hexBinLabels(activeBreaks) : [];
 
   return (
-    <div className="relative h-full w-full">
-      <div
-        ref={ref}
-        role="application"
-        aria-label={`Interactive map of ${metro ?? "transit"} routes and stops with a population and jobs overlay`}
-        className="h-full w-full"
-      />
-
-      {/* Overlay controls + legend. Native radios = keyboard + screen-reader access. */}
-      <div className="absolute left-2 top-2 max-w-[68%] rounded-md border border-hairline bg-[#0b0f14]/90 p-3 text-xs text-text shadow-lg backdrop-blur-sm">
+    <MapShell
+      buildStyle={() => style(pmtilesUrl, hex)}
+      bbox={bbox}
+      ariaLabel={`Interactive map of ${metro ?? "transit"} routes and stops with a population and jobs overlay`}
+      onReady={onReady}
+      errorMessage="The map failed to load. The route and area tables below have the same data."
+    >
+      <MapPanel label="Overlay">
         <fieldset>
           <legend className="font-medium text-text">Overlay</legend>
           <div className="mt-1 flex flex-col">
@@ -203,7 +162,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
                   value={val}
                   checked={overlay === val}
                   onChange={() => setOverlay(val)}
-                  className="h-4 w-4 accent-[#2bb8cf]"
+                  className="h-4 w-4 accent-[var(--accent)]"
                 />
                 <span>{label}</span>
               </label>
@@ -226,13 +185,7 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, metro }: Props) {
             <li className="mt-1 text-text-muted">per hex cell · click a cell for exact values</li>
           </ul>
         )}
-      </div>
-
-      {error && (
-        <p role="alert" className="absolute inset-x-0 bottom-0 bg-surface/90 p-2 text-center text-sm text-text-muted">
-          The map failed to load. The route and area tables below have the same data.
-        </p>
-      )}
-    </div>
+      </MapPanel>
+    </MapShell>
   );
 }

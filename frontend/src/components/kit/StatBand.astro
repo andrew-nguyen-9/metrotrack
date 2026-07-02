@@ -1,0 +1,15 @@
+---
+// StatBand — a responsive row of Stats (the dashboard readout strip). Wrap a set
+// of <Stat> in the default slot; they reflow via Grid auto-fit.
+import Grid from "@/components/kit/Grid.astro";
+import type { SpaceKey } from "@/lib/tokens";
+
+interface Props {
+  min?: string;
+  gap?: SpaceKey;
+  class?: string;
+}
+const { min = "12rem", gap = "lg", class: className } = Astro.props;
+---
+
+<Grid min={min} gap={gap} class={className}><slot /></Grid>

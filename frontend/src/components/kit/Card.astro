@@ -1,0 +1,38 @@
+---
+// Card — surface panel with an optional heading + link. `status="soon"` renders
+// the coming-soon variant (dimmed, badge, non-interactive) that the E2 metro
+// directory reuses. A whole-card link is used when `href` is set.
+interface Props {
+  title?: string;
+  href?: string;
+  status?: "live" | "soon";
+  class?: string;
+}
+const { title, href, status = "live", class: className } = Astro.props;
+const soon = status === "soon";
+const interactive = href && !soon;
+const Tag = interactive ? "a" : "div";
+---
+
+<Tag
+  href={interactive ? href : undefined}
+  aria-disabled={soon ? "true" : undefined}
+  class:list={[
+    "block rounded-lg border border-hairline bg-surface p-5",
+    interactive && "transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50",
+    soon && "opacity-60",
+    className,
+  ]}
+>
+  {(title || soon) && (
+    <div class="flex items-center justify-between gap-2">
+      {title && <h3 class="font-medium text-text">{title}</h3>}
+      {soon && (
+        <span class="rounded-full border border-hairline px-2 py-0.5 text-xs font-medium tracking-wide text-text-muted uppercase">
+          Soon
+        </span>
+      )}
+    </div>
+  )}
+  <div class:list={[(title || soon) && "mt-2", "text-sm text-text-muted"]}><slot /></div>
+</Tag>

@@ -1,0 +1,27 @@
+---
+// Sidebar — a content area beside a fixed-ish rail that collapses to stacked on
+// narrow screens (the map + control-rail layout, DIRECTION §3). Uses the Every
+// Layout flex-wrap technique: no media queries, wraps when `content` can't hold
+// `contentMin`. Put the rail in the `side` slot, the main area in the default slot.
+import type { SpaceKey } from "@/lib/tokens";
+import { spaceVar } from "@/lib/tokens";
+
+interface Props {
+  side?: "left" | "right";
+  sideWidth?: string;    // rail's preferred width, e.g. "18rem"
+  contentMin?: string;   // main area's min width before wrapping, e.g. "60%"
+  gap?: SpaceKey;
+  class?: string;
+}
+const {
+  side = "right", sideWidth = "18rem", contentMin = "60%", gap = "md", class: className,
+} = Astro.props;
+const wrapStyle = `display:flex;flex-wrap:wrap;gap:${spaceVar(gap)}`;
+const sideStyle = `flex-grow:1;flex-basis:${sideWidth};${side === "left" ? "order:-1;" : ""}`;
+const contentStyle = `flex-grow:999;flex-basis:0;min-width:${contentMin}`;
+---
+
+<div class={className} style={wrapStyle}>
+  <div style={contentStyle}><slot /></div>
+  <div style={sideStyle}><slot name="side" /></div>
+</div>

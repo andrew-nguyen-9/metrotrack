@@ -1,0 +1,24 @@
+---
+// SourceTag — the provenance caption that MUST accompany every published figure
+// (CLAUDE.md data-integrity rule). Names the source, its as-of date, and carries
+// the DATA_SOURCES.md row id (`data-source`) for traceability/audit. Pass `href`
+// to link the source label to its primary source.
+interface Props {
+  source: string;          // human label, e.g. "Census LEHD LODES8 (2022)"
+  id?: string;             // the docs/architecture/DATA_SOURCES.md row id
+  asOf?: string | null;    // "as of" date shown as a tabular figure
+  href?: string;           // primary-source URL (opens in new tab)
+  note?: string;
+  class?: string;
+}
+const { source, id, asOf, href, note, class: className } = Astro.props;
+---
+
+<p
+  class:list={["text-xs text-text-muted", className]}
+  data-source={id}
+>
+  Source: {href
+    ? <a class="underline hover:text-text" href={href} target="_blank" rel="noopener noreferrer">{source}</a>
+    : source}{note ? <> — {note}</> : null}{asOf && <> · as of <span class="tabular">{asOf}</span></>}
+</p>
