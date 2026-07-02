@@ -65,27 +65,54 @@ def normalize_csv(data: bytes) -> bytes:
 
 
 def subset_routes(data: bytes, n: int) -> tuple[bytes, set[str]]:
-    """First n routes + the set of their route_ids."""
+    """First n routes *per route_type* + the set of their route_ids.
+
+    Stratifying by route_type guarantees every mode a feed carries lands in the
+    committed sample: CTA ships bus + rail ('L') in one feed and lists all bus
+    routes before the eight rail lines, so a flat head slice would drop rail
+    entirely. Feeds with no route_type column fall back to a flat first-n.
+    """
     header, rows = _rows(data)
     idx = header.index("route_id")
-    rows = rows[:n]
-    return _to_bytes(header, rows), {r[idx] for r in rows}
+    if "route_type" not in header:
+        rows = rows[:n]
+        return _to_bytes(header, rows), {r[idx] for r in rows}
+    tidx = header.index("route_type")
+    per_type: dict[str, int] = {}
+    kept = []
+    for r in rows:
+        t = r[tidx]
+        if per_type.get(t, 0) >= n:
+            continue
+        per_type[t] = per_type.get(t, 0) + 1
+        kept.append(r)
+    return _to_bytes(header, kept), {r[idx] for r in kept}
 
 
-def subset_trips(data: bytes, route_ids: set[str], max_shapes_per_route: int = 2) -> tuple[bytes, set[str]]:
+def subset_trips(data: bytes, route_ids: set[str],
+                 max_shapes_per_route: int = 2) -> tuple[bytes, set[str], set[str]]:
     """Trips for the kept routes, capped to a few shapes per route.
 
-    We only need trips to map route → shape, so we keep at most
-    `max_shapes_per_route` distinct shapes per route (≈ the two directions). This
-    keeps a long-bus-route feed like CTA from exploding the committed sample.
+    Returns (trips_bytes, shape_ids, trip_ids). We keep at most
+    `max_shapes_per_route` distinct shapes per route (≈ the two directions) — that
+    keeps a long-bus-route feed like CTA from exploding the committed sample. The
+    kept trip_ids drive route-coherent stop sampling (see stop_ids_for_trips).
     Tolerates feeds whose trips.txt has no shape_id (keeps one trip per route).
     """
     header, rows = _rows(data)
     ridx = header.index("route_id")
+    tid = header.index("trip_id") if "trip_id" in header else None
+    trip_ids: set[str] = set()
     if "shape_id" not in header:
         seen: set[str] = set()
-        kept = [r for r in rows if r[ridx] in route_ids and not (r[ridx] in seen or seen.add(r[ridx]))]
-        return _to_bytes(header, kept), set()
+        kept = []
+        for r in rows:
+            if r[ridx] in route_ids and r[ridx] not in seen:
+                seen.add(r[ridx])
+                kept.append(r)
+                if tid is not None:
+                    trip_ids.add(r[tid])
+        return _to_bytes(header, kept), set(), trip_ids
 
     sidx = header.index("shape_id")
     per_route: dict[str, set[str]] = {}
@@ -102,13 +129,39 @@ def subset_trips(data: bytes, route_ids: set[str], max_shapes_per_route: int = 2
         kept.append(r)
         if sh:
             shape_ids.add(sh)
-    return _to_bytes(header, kept), shape_ids
+        if tid is not None:
+            trip_ids.add(r[tid])
+    return _to_bytes(header, kept), shape_ids, trip_ids
 
 
 def subset_shapes(data: bytes, shape_ids: set[str]) -> bytes:
     header, rows = _rows(data)
     sidx = header.index("shape_id")
     return _to_bytes(header, [r for r in rows if r[sidx] in shape_ids])
+
+
+def stop_ids_for_trips(data: bytes, trip_ids: set[str]) -> set[str]:
+    """stop_ids visited by the kept trips — the route-coherent stop set.
+
+    stop_times.txt is the only GTFS link from a trip to its stops; we read it
+    (streaming, never persisted — it is millions of rows) purely to select which
+    stops the committed sample keeps. This pulls CTA's rail *stations* into the
+    sample, not just the head-slice of bus stops. ids are stripped so a
+    space-padded feed (Metra) still joins to the normalized trips.
+    """
+    if not trip_ids:
+        return set()
+    reader = csv.reader(io.StringIO(data.decode("utf-8-sig")))
+    header = [h.strip() for h in next(reader)]
+    tidx, sidx = header.index("trip_id"), header.index("stop_id")
+    return {row[sidx].strip() for row in reader
+            if row and row[tidx].strip() in trip_ids}
+
+
+def subset_stops_by_id(data: bytes, stop_ids: set[str]) -> bytes:
+    header, rows = _rows(data)
+    idx = header.index("stop_id")
+    return _to_bytes(header, [r for r in rows if r[idx] in stop_ids])
 
 
 def subset_head(data: bytes, m: int) -> bytes:
@@ -150,12 +203,23 @@ def load_agency(metro, agency, *, sample: int | None = None) -> list[bronze.Bron
 
     if sample:
         routes_b, ids = subset_routes(raw["routes"], sample)
-        trips_b, shape_ids = subset_trips(raw["trips"], ids) if "trips" in raw else (b"", set())
+        if "trips" in raw:
+            trips_b, shape_ids, trip_ids = subset_trips(raw["trips"], ids)
+        else:
+            trips_b, shape_ids, trip_ids = b"", set(), set()
+        # Route-coherent stops: keep the stops the kept trips actually visit (via
+        # stop_times, read straight off the zip and discarded). Falls back to a head
+        # slice if the feed omits stop_times, so the sample is never stop-empty.
+        stop_ids: set[str] = set()
+        if trip_ids and "stop_times.txt" in names:
+            stop_ids = stop_ids_for_trips(zf.read("stop_times.txt"), trip_ids)
+        stops_b = subset_stops_by_id(raw["stops"], stop_ids) if stop_ids \
+            else subset_head(raw["stops"], sample * 40)
         out = {
             "routes": routes_b,
             "trips": trips_b,
             "shapes": subset_shapes(raw["shapes"], shape_ids) if "shapes" in raw else b"",
-            "stops": subset_head(raw["stops"], sample * 40),
+            "stops": stops_b,
         }
     else:
         out = raw

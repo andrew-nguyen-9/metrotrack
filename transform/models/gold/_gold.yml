@@ -5,7 +5,7 @@ version: 2
 # serving table is asserted by the singular tests under tests/ (gold_* _unique.sql).
 models:
   - name: gold_routes
-    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    description: Routes shaped for the Supabase serving spine (geometry as WKT, SRID 4326). mode ∈ bus/rail/commuter-rail — the E3b filter dimension.
     columns:
       - name: metro_id
         tests: [not_null]
@@ -13,10 +13,15 @@ models:
         tests: [not_null]
       - name: route_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'other']
       - name: geom_wkt
         tests: [not_null]
   - name: gold_stops
-    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326).
+    description: Stops shaped for the Supabase serving spine (geometry as WKT, SRID 4326). mode = agency route modes (multi for CTA).
     columns:
       - name: metro_id
         tests: [not_null]
@@ -24,6 +29,11 @@ models:
         tests: [not_null]
       - name: stop_id
         tests: [not_null]
+      - name: mode
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['bus', 'rail', 'commuter-rail', 'multi', 'other']
       - name: geom_wkt
         tests: [not_null]
   - name: gold_hex_metrics
