@@ -217,4 +217,59 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* ── Prose — styles the raw HTML an MDX article renders (headings, paragraphs,
+     lists, quotes, code). Token-only; capped at --measure (60–72ch) for a
+     comfortable reading measure. Used by the article template's body wrapper. */
+  .prose {
+    max-width: var(--measure);
+    line-height: var(--leading-normal);
+    color: var(--text);
+  }
+  .prose > * + * { margin-top: var(--space-md); }
+  .prose h2 {
+    margin-top: var(--space-xl);
+    font-size: var(--text-lg);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+    letter-spacing: -0.01em;
+  }
+  .prose h3 {
+    margin-top: var(--space-lg);
+    font-size: var(--text-md);
+    font-weight: 600;
+    line-height: var(--leading-snug);
+  }
+  .prose a {
+    color: var(--accent);
+    text-underline-offset: 2px;
+    text-decoration-line: underline;
+  }
+  .prose ul, .prose ol { padding-left: var(--space-md); }
+  .prose ul { list-style: disc; }
+  .prose ol { list-style: decimal; }
+  .prose li + li { margin-top: var(--space-2xs); }
+  .prose blockquote {
+    padding-left: var(--space-md);
+    border-left: 2px solid var(--accent);
+    color: var(--text-muted);
+    font-style: italic;
+  }
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--surface-2);
+    padding: 0.1em 0.35em;
+    border-radius: 0.25rem;
+  }
+  .prose pre {
+    padding: var(--space-sm);
+    background: var(--surface-2);
+    border: 1px solid var(--border-hairline);
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+  .prose pre code { background: none; padding: 0; }
+  .prose hr { border-color: var(--border-hairline); }
+  .prose strong { color: var(--text); font-weight: 600; }
 }
