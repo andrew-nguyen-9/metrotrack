@@ -5,11 +5,15 @@ import type {
 import maplibregl from "maplibre-gl";
 import MapShell, { MapPanel } from "./MapShell";
 import MapSearch, { type SearchEntry } from "./MapSearch";
+import LiveArrivals, { type ArrStatus } from "./LiveArrivals";
 import {
   HEX_RAMPS, HEX_LABELS, hexBinLabels, authorityLabel,
   ALL_ON, modeAuthorities, stopAuthorities, MODE_DASH, MODE_LABEL,
   type HexData, type HexMetric, type Route, type FilterState, type FilterKey,
 } from "../lib/transit";
+// Type-only import — erased at build, so no server fetch/normalizer code (or the
+// CTA base URLs) is pulled into the client bundle. e4b consumes the *shape* only.
+import type { LiveVehicle, LiveFeed } from "../lib/live";
 
 // TransitMap — the reference consumer of MapShell. Owns the transit style, the
 // agency/mode filters + route/stop search (e3b), the overlay control, legend and
@@ -63,6 +67,59 @@ const authFilter = (auths: string[]): FilterSpecification =>
 
 const routeFilter = (mode: string, auths: string[]): FilterSpecification =>
   ["all", ["==", ["get", "mode"], mode], authFilter(auths)] as FilterSpecification;
+
+// ── Live vehicle layer (e4b) ─────────────────────────────────────────────────
+// Polls the e4a server endpoint (/api/live/<metro>) — keys stay server-side. The
+// default slice is all eight CTA 'L' lines (one ttpositions call). Positions are a
+// GeoJSON source animated between polls; reduce-motion → plain position updates.
+const LIVE_SRC = "live";
+const LIVE_LAYER = "live-vehicles";
+const L_LINES = "red,blue,brn,g,org,pink,p,y"; // Train Tracker tokens (see L_ROUTE_ID)
+// CTA agency blue (globals.css --agency-cta #1743a6), lightened for contrast on the
+// dark map (agency-color token per brief; shape below carries the colorblind cue).
+const CTA_FILL = "#4f83e6";
+const EMPTY_FC = { type: "FeatureCollection", features: [] } as const;
+const MAX_TWEEN_MS = 20_000; // ease across ~the poll gap, capped so stalls don't crawl
+
+const prefersReduce = (): boolean =>
+  (typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) ||
+  document.documentElement.getAttribute("data-motion") === "reduce";
+
+// One small colored glyph per mode — shape is the colorblind-safe mode cue (rail =
+// triangle pointing in travel direction via icon-rotate; bus = disc). White halo so
+// it reads over route lines on the dark basemap. Drawn to a canvas → map.addImage.
+function vehicleIcon(mode: "bus" | "rail"): ImageData {
+  const S = 30;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const g = c.getContext("2d")!;
+  g.translate(S / 2, S / 2);
+  g.lineWidth = 3;
+  g.lineJoin = "round";
+  g.strokeStyle = "#ffffff";
+  g.fillStyle = CTA_FILL;
+  g.beginPath();
+  if (mode === "rail") {
+    const r = 11;
+    g.moveTo(0, -r);
+    g.lineTo(r * 0.86, r * 0.72);
+    g.lineTo(-r * 0.86, r * 0.72);
+    g.closePath();
+  } else {
+    g.arc(0, 0, 9, 0, Math.PI * 2);
+  }
+  g.fill();
+  g.stroke();
+  return g.getImageData(0, 0, S, S);
+}
+
+// A vehicle mid-tween: last target → new target over the poll interval.
+type Veh = {
+  fromLng: number; fromLat: number; toLng: number; toLat: number; t0: number;
+  heading: number | null; route_id: string; mode: "bus" | "rail";
+  destination: string | null; delayed: boolean;
+};
 
 const style = (pmtilesUrl: string, hex: HexData): StyleSpecification => ({
   version: 8,
@@ -131,6 +188,73 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
   const [filters, setFilters] = useState<FilterState>(ALL_ON);
   const [stopEntries, setStopEntries] = useState<SearchEntry[]>([]);
 
+  // ── Live state (e4b) ──────────────────────────────────────────────────────
+  const slug = pmtilesUrl.replace(/^\//, "").split("/")[0] || "chicago";
+  const [ready, setReady] = useState(false);        // map + live layer wired
+  const [liveOn, setLiveOn] = useState(true);       // poll toggle (also saves quota)
+  const [feed, setFeed] = useState<LiveFeed | null>(null);
+  const [selectedStop, setSelectedStop] =
+    useState<{ id: string; name: string; authority: string } | null>(null);
+  const [arrStatus, setArrStatus] = useState<ArrStatus>("idle");
+  const liveRef = useRef(new Map<string, Veh>());
+  const rafRef = useRef<number | undefined>(undefined);
+  const durRef = useRef(0);
+
+  // Route → its GTFS color, for the arrival badges (CTA only; data, not a guess).
+  const routeColorMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const r of routes) if (r.color) m.set(`${r.authority_id}:${r.route_id}`, `#${r.color}`);
+    return m;
+  }, [routes]);
+
+  // Build the GeoJSON at the current animation frame (linear tween per vehicle).
+  const frameFC = () => {
+    const now = performance.now();
+    const features = [] as unknown[];
+    for (const v of liveRef.current.values()) {
+      const f = durRef.current > 0 ? Math.min(1, (now - v.t0) / durRef.current) : 1;
+      features.push({
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [v.fromLng + (v.toLng - v.fromLng) * f, v.fromLat + (v.toLat - v.fromLat) * f],
+        },
+        properties: {
+          route_id: v.route_id, mode: v.mode, destination: v.destination,
+          delayed: v.delayed, heading: v.heading ?? 0,
+        },
+      });
+    }
+    return { type: "FeatureCollection", features };
+  };
+
+  const tickAnim = () => {
+    const src = mapRef.current?.getSource(LIVE_SRC) as maplibregl.GeoJSONSource | undefined;
+    if (!src) { rafRef.current = undefined; return; }
+    src.setData(frameFC() as never);
+    const now = performance.now();
+    const done = durRef.current <= 0 ||
+      [...liveRef.current.values()].every((v) => now - v.t0 >= durRef.current);
+    rafRef.current = done ? undefined : requestAnimationFrame(tickAnim);
+  };
+
+  const applyVehicles = (vehicles: LiveVehicle[], pollMs: number) => {
+    const now = performance.now();
+    durRef.current = prefersReduce() ? 0 : Math.min(pollMs, MAX_TWEEN_MS);
+    const next = new Map<string, Veh>();
+    for (const v of vehicles) {
+      const prev = liveRef.current.get(v.vehicle_id);
+      next.set(v.vehicle_id, {
+        fromLng: prev ? prev.toLng : v.lon, fromLat: prev ? prev.toLat : v.lat,
+        toLng: v.lon, toLat: v.lat, t0: now, heading: v.heading,
+        route_id: v.route_id, mode: v.mode, destination: v.destination, delayed: v.delayed,
+      });
+    }
+    liveRef.current = next;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    tickAnim();
+  };
+
   // Stop search index: fetched lazily from the served static stops.json (same
   // source as the tiles; sidesteps low-zoom point thinning + keeps the initial
   // HTML lean). Routes stay in the tiles/prop. No backend.
@@ -182,10 +306,13 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
 
     // Route / stop click popups + pointer cursor.
     map.on("click", "stops", (e) => {
-      const p = e.features?.[0]?.properties as { name: string; authority_id: string } | undefined;
+      const p = e.features?.[0]?.properties as
+        { name: string; authority_id: string; stop_id?: string } | undefined;
       if (!p) return;
       new maplibregl.Popup({ closeButton: true }).setLngLat(e.lngLat)
         .setHTML(popupHTML(p.name, `${authorityLabel(p.authority_id)} stop`)).addTo(map);
+      // Also open the live next-arrivals panel for this stop.
+      if (p.stop_id) setSelectedStop({ id: String(p.stop_id), name: p.name, authority: p.authority_id });
     });
     for (const m of ROUTE_MODES) {
       const id = routeLayerId(m);
@@ -202,6 +329,38 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
     }
     map.on("mouseenter", "stops", () => { map.getCanvas().style.cursor = "pointer"; });
     map.on("mouseleave", "stops", () => { map.getCanvas().style.cursor = ""; });
+
+    // Live vehicle layer: mode glyphs + an (initially empty) GeoJSON source + a
+    // symbol layer. Icons are added post-load; the poll effect feeds setData.
+    if (!map.hasImage("veh-rail")) map.addImage("veh-rail", vehicleIcon("rail"), { pixelRatio: 2 });
+    if (!map.hasImage("veh-bus")) map.addImage("veh-bus", vehicleIcon("bus"), { pixelRatio: 2 });
+    if (!map.getSource(LIVE_SRC)) map.addSource(LIVE_SRC, { type: "geojson", data: EMPTY_FC as never });
+    if (!map.getLayer(LIVE_LAYER)) {
+      map.addLayer({
+        id: LIVE_LAYER, type: "symbol", source: LIVE_SRC,
+        layout: {
+          "icon-image": ["match", ["get", "mode"], "bus", "veh-bus", "veh-rail"],
+          "icon-rotate": ["coalesce", ["get", "heading"], 0],
+          "icon-rotation-alignment": "map",
+          "icon-allow-overlap": true,
+          "icon-ignore-placement": true,
+          "icon-size": ["interpolate", ["linear"], ["zoom"], 8, 0.5, 14, 1],
+        },
+      });
+    }
+    map.on("click", LIVE_LAYER, (e) => {
+      const p = e.features?.[0]?.properties as
+        { route_id: string; destination?: string; delayed?: unknown; mode: string } | undefined;
+      if (!p) return;
+      const title = [p.route_id, p.destination].filter(Boolean).join(" → ");
+      const dly = p.delayed === true || p.delayed === "true";
+      const sub = `CTA ${p.mode === "bus" ? "bus" : "‘L’ train"}${dly ? " · delayed" : ""} · live`;
+      new maplibregl.Popup({ closeButton: true }).setLngLat(e.lngLat).setHTML(popupHTML(title, sub)).addTo(map);
+    });
+    map.on("mouseenter", LIVE_LAYER, () => { map.getCanvas().style.cursor = "pointer"; });
+    map.on("mouseleave", LIVE_LAYER, () => { map.getCanvas().style.cursor = ""; });
+
+    setReady(true);
   };
 
   // Apply agency/mode filters to the per-mode route layers + the stops layer.
@@ -226,6 +385,60 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
     map.isStyleLoaded() ? apply() : map.once("load", apply);
   }, [overlay]);
 
+  // Live poll (e4b): one interval hitting the e4a server endpoint. Requests all L
+  // lines (positions) plus — when a CTA stop is picked — that stop's arrivals in the
+  // SAME call (bus_stops + stations; the endpoint returns whichever id matches).
+  // Never calls CTA directly; polls no faster than the endpoint's x-poll-ms hint.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!ready || !map) return;
+    if (!liveOn) {
+      liveRef.current = new Map();
+      (map.getSource(LIVE_SRC) as maplibregl.GeoJSONSource | undefined)?.setData(EMPTY_FC as never);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      setFeed(null); setArrStatus("idle");
+      return;
+    }
+    const params = new URLSearchParams({ lines: L_LINES });
+    const stopIsCta = selectedStop?.authority === "cta";
+    if (stopIsCta && selectedStop) {
+      params.set("bus_stops", selectedStop.id);
+      params.set("stations", selectedStop.id);
+      setArrStatus("loading");
+    } else {
+      setArrStatus("idle");
+    }
+    const url = `/api/live/${slug}?${params.toString()}`;
+
+    let alive = true;
+    let timer: number | undefined;
+    const tick = async () => {
+      try {
+        const res = await fetch(url);
+        const pollMs = Number(res.headers.get("x-poll-ms")) || 30_000;
+        const data = (await res.json()) as LiveFeed;
+        if (!alive) return;
+        applyVehicles(data.vehicles, pollMs);
+        setFeed(data);
+        if (stopIsCta) {
+          setArrStatus(data.errors.length && data.arrivals.length === 0 ? "error" : "ok");
+        }
+        timer = window.setTimeout(tick, pollMs);
+      } catch {
+        if (!alive) return;
+        if (stopIsCta) setArrStatus("error");
+        timer = window.setTimeout(tick, 30_000);
+      }
+    };
+    tick();
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, liveOn, selectedStop]);
+
   const onSelect = (e: SearchEntry) => {
     const map = mapRef.current;
     if (!map) return;
@@ -236,8 +449,10 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
       map.flyTo({ center: e.lngLat, zoom: 14 });
       new maplibregl.Popup({ closeButton: true }).setLngLat(e.lngLat)
         .setHTML(popupHTML(e.label, e.sublabel ?? "")).addTo(map);
+      setSelectedStop({ id: e.id, name: e.label, authority: e.authority });
       return;
     }
+    setSelectedStop(null); // route pick clears any open arrivals panel
     // Route: highlight + fit to its geometry (gathered from the loaded tiles).
     const f: FilterSpecification =
       ["all", ["==", ["get", "route_id"], e.id], ["==", ["get", "authority_id"], e.authority]];
@@ -310,6 +525,28 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
               </div>
             </fieldset>
 
+            <fieldset className="border-t border-hairline pt-2">
+              <legend className="font-medium text-text">Live</legend>
+              <label className="mt-1 flex cursor-pointer items-center gap-2 py-1">
+                <input
+                  type="checkbox"
+                  checked={liveOn}
+                  onChange={(ev) => setLiveOn(ev.target.checked)}
+                  className="h-4 w-4 accent-[var(--accent)]"
+                />
+                <span>Live CTA ‘L’ trains</span>
+              </label>
+              {liveOn && feed?.errors.some((e) => e.includes("credentials_missing")) && (
+                <p className="text-xs text-text-muted">
+                  Live feed isn’t configured in this environment.
+                </p>
+              )}
+              <p className="text-xs text-text-muted">
+                Positions from the CTA Train Tracker, refreshed live. Click a stop for
+                next arrivals.
+              </p>
+            </fieldset>
+
             {/* Legend — mode is encoded by line shape (dash), never color alone. */}
             <div className="border-t border-hairline pt-2">
               <p className="font-medium text-text">Legend</p>
@@ -326,6 +563,12 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
                 <li className="flex items-center gap-2">
                   <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full" style={{ background: STOP }} />
                   <span>Stop</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" className="shrink-0">
+                    <path d="M7 1 L12.5 12 L1.5 12 Z" fill={CTA_FILL} stroke="#fff" strokeWidth="1.5" strokeLinejoin="round" />
+                  </svg>
+                  <span>Live vehicle (points in travel direction)</span>
                 </li>
               </ul>
               <p className="mt-1 text-text-muted">Line color = each route’s own color.</p>
@@ -346,6 +589,20 @@ export default function TransitMap({ pmtilesUrl, bbox, hex, routes, metro }: Pro
           </div>
         </details>
       </MapPanel>
+
+      {selectedStop && (
+        <MapPanel label="Live arrivals" className="left-auto right-2 top-auto bottom-8 w-64 max-w-[70%]">
+          <LiveArrivals
+            stop={selectedStop}
+            arrivals={feed?.arrivals ?? []}
+            status={arrStatus}
+            errors={feed?.errors ?? []}
+            generated={feed?.generated ?? null}
+            colorFor={(rid) => routeColorMap.get(`cta:${rid}`) ?? null}
+            onClose={() => setSelectedStop(null)}
+          />
+        </MapPanel>
+      )}
     </MapShell>
   );
 }
