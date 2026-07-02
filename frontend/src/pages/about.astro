@@ -1,0 +1,135 @@
+---
+// /about — the project's neutral-civic mission, who/what it's for, and the
+// integrity stance. Static content page; no islands (ponytail). Global page:
+// Base falls back to the default metro for the shell nav/footer.
+import Base from "@/layouts/Base.astro";
+import Stack from "@/components/kit/Stack.astro";
+import Grid from "@/components/kit/Grid.astro";
+import Card from "@/components/kit/Card.astro";
+import Callout from "@/components/kit/Callout.astro";
+
+const repo = "https://github.com/andrew-nguyen-9/metrotrack";
+
+// Who it's for, in the vision's priority order (docs/overview/VISION.md).
+const audiences = [
+  { who: "Residents & riders", why: "“Is my area served, and is it getting better or worse?”" },
+  { who: "Policy & agency staff", why: "A sourced view to ground decisions, not spin." },
+  { who: "Journalists & advocates", why: "Citable funding vs. service vs. staffing figures." },
+];
+
+// The three pillars + the signature analysis.
+const pillars = [
+  { name: "Funding", body: "Budget vs. actuals for NITA, CTA, Pace, and Metra over time — where the money goes." },
+  { name: "Mapping", body: "Bus & rail usage against population, jobs (Census LODES), and destinations." },
+  { name: "Hiring", body: "Open reqs and a service-delivery shortfall metric, tracked as a trend." },
+  { name: "Job-access score", body: "The signature: how many jobs you can reach by transit in 15 / 30 / 45 minutes." },
+];
+---
+
+<Base
+  title="About — MetroTrack"
+  description="MetroTrack is a neutral, public accountability tracker for Chicagoland transit funding, service, hiring, and job access. Built on open data; every figure traces to a source."
+>
+  <Stack gap="2xl">
+    <Stack gap="sm" class="max-w-[var(--measure)]">
+      <h1 class="text-[length:var(--text-3xl)] font-semibold leading-[var(--leading-tight)] tracking-tight">
+        Transit you can see
+      </h1>
+      <p class="text-[length:var(--text-md)] text-text-muted">
+        MetroTrack is an independent, public accountability tracker for Chicagoland
+        transit. It answers two plain questions with sourced data: <strong class="text-text">where
+        does the money go</strong>, and <strong class="text-text">who does the service
+        reach</strong>.
+      </p>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="why-heading" class="max-w-[var(--measure)]">
+      <h2 id="why-heading" class="text-[length:var(--text-lg)] font-medium">Why it exists</h2>
+      <p class="text-text-muted leading-[var(--leading-normal)]">
+        Chicagoland transit is being restructured — the RTA is being reorganized into
+        the NITA — with a large funding reallocation across CTA, Pace, and Metra.
+        Public and political interest in where the money goes and who it serves is high,
+        and there is no single accessible place to see it. This is that place.
+      </p>
+      <Callout tone="note" title="On the figures">
+        The governance and funding specifics — the NITA transition and its dollar
+        amounts — are verified against primary sources before they appear here, and
+        any not-yet-verified number is shown as a placeholder, not asserted. The mission
+        stands regardless of the exact figures.
+      </Callout>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="neutral-heading" class="max-w-[var(--measure)]">
+      <h2 id="neutral-heading" class="text-[length:var(--text-lg)] font-medium">Neutral by construction</h2>
+      <p class="text-text-muted leading-[var(--leading-normal)]">
+        The stance is just-the-data. MetroTrack takes no position on how transit
+        <em>should</em> be funded or run — it reports what the public record shows.
+        Three habits keep it honest:
+      </p>
+      <ul class="flex flex-col gap-2 text-text-muted leading-[var(--leading-normal)]">
+        <li class="flex gap-3">
+          <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+          <span><strong class="text-text">Every figure shows its source and as-of date.</strong>
+          Nothing is published without a traceable row in the data-sources ledger.</span>
+        </li>
+        <li class="flex gap-3">
+          <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+          <span><strong class="text-text">Missing data stays missing.</strong> When a
+          number isn’t sourced yet, the page says so — it never fabricates one to
+          fill a gap.</span>
+        </li>
+        <li class="flex gap-3">
+          <span aria-hidden="true" class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent"></span>
+          <span><strong class="text-text">Methods are public.</strong> Every metric’s
+          formula and caveats live on the <a class="underline hover:text-text" href="/methodology">methodology</a>
+          page, and the code is open source.</span>
+        </li>
+      </ul>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="what-heading">
+      <h2 id="what-heading" class="text-[length:var(--text-lg)] font-medium">What it tracks</h2>
+      <Grid min="15rem" gap="md">
+        {pillars.map((p) => (
+          <Card title={p.name}>{p.body}</Card>
+        ))}
+      </Grid>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="who-heading">
+      <h2 id="who-heading" class="text-[length:var(--text-lg)] font-medium">Who it’s for</h2>
+      <Grid min="16rem" gap="md">
+        {audiences.map((a) => (
+          <Card title={a.who}>{a.why}</Card>
+        ))}
+      </Grid>
+    </Stack>
+
+    <Stack gap="md" as="section" aria-labelledby="build-heading" class="max-w-[var(--measure)]">
+      <h2 id="build-heading" class="text-[length:var(--text-lg)] font-medium">How it’s built</h2>
+      <p class="text-text-muted leading-[var(--leading-normal)]">
+        MetroTrack runs entirely on free and open data — GTFS feeds from CTA, Pace,
+        and Metra; the U.S. Census (LODES jobs, population); the Chicago Data Portal; and
+        OpenStreetMap. It updates automatically on a nightly schedule. Read the full
+        method on the <a class="underline hover:text-text" href="/methodology">methodology</a>
+        page, or browse the source and data ledger on GitHub.
+      </p>
+      <div class="flex flex-wrap gap-3">
+        <a
+          href="/methodology"
+          class="inline-flex items-center gap-1 rounded-md border border-hairline bg-surface px-4 py-2 text-sm font-medium transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+        >
+          Methodology &amp; sources →
+        </a>
+        <a
+          href={repo}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 rounded-md border border-hairline px-4 py-2 text-sm font-medium text-text-muted transition-colors duration-[var(--dur)] ease-[var(--ease)] hover:border-accent/50 hover:text-text"
+        >
+          Source on GitHub ↗
+        </a>
+      </div>
+    </Stack>
+  </Stack>
+</Base>
