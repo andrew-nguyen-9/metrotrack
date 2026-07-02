@@ -70,6 +70,5 @@ export const transitData = (slug: string): TransitData => pick(transitFiles, slu
 export const fundingData = (slug: string): FundingData => pick(fundingFiles, slug, "funding");
 export const hiringData = (slug: string): HiringData => pick(hiringFiles, slug, "hiring");
 
-// Job-access export does not exist yet (the access pillar lands later — v2.5 [L*]).
-// Pages degrade gracefully on this; see [metro]/job-access.astro.
-export const accessData = (_slug: string): null => null;
+// Job access reads the hex slice of transit.json (the gold_hex_access score, exported
+// by pipeline/tiles.py) — see [metro]/job-access.astro. No separate loader needed.
